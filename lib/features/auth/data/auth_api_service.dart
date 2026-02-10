@@ -1,0 +1,62 @@
+import 'package:lms/features/auth/data/models/user_model.dart';
+import '../../../../core/network/api_service.dart';
+
+class AuthApiService {
+  final ApiService api;
+
+  AuthApiService(this.api);
+
+  // ─────────────────────────────────────────────
+  // AUTH
+  // ─────────────────────────────────────────────
+
+  Future<UserModel> login(String email, String password) async {
+    final response = await api.post('/auth/login', {
+      'email': email,
+      'password': password,
+    });
+
+    return UserModel.fromJson(response);
+  }
+
+  Future<Map<String, dynamic>> fetchProfile() async {
+    return await api.get('/employees/single');
+  }
+
+  Future<List<String>> fetchPermissions() async {
+    final response = await api.get('/auth/permissions');
+
+    final List list = response['permissions'];
+    return list.map((p) => p['name'] as String).toList();
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await api.post('/auth/change-password', {
+      "currentPassword": currentPassword,
+      "newPassword": newPassword,
+      "confirmPassword": confirmPassword,
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // 🔔 FCM TOKEN (NEW – REQUIRED FOR PUSH)
+  // ─────────────────────────────────────────────
+
+  Future<void> registerFcmToken({
+    required String fcmToken,
+    required String platform, // "android" | "ios"
+  }) async {
+    await api.post('/auth/register-fcm-token', {
+      "fcmToken": fcmToken,
+      "platform": platform,
+    });
+  }
+
+  Future<void> unregisterFcmToken({required String fcmToken}) async {
+    await api.post('/auth/unregister-fcm-token', {"fcmToken": fcmToken});
+  }
+}

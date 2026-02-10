@@ -1,0 +1,40 @@
+class AttendanceSummary {
+  final int workingDays;
+  final int lateDays;
+  final int totalLeaves;
+  final int absentDays;
+  final int payableDays;
+  final int totalMinutes;
+
+  /// 🔔 NEW (hours, not minutes)
+  final int expectedWorkingHours;
+
+  AttendanceSummary({
+    required this.workingDays,
+    required this.lateDays,
+    required this.totalLeaves,
+    required this.absentDays,
+    required this.payableDays,
+    required this.totalMinutes,
+    required this.expectedWorkingHours,
+  });
+
+  factory AttendanceSummary.fromJson(Map<String, dynamic> json) {
+    int asInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is double) return v.toInt();
+      return int.tryParse(v.toString()) ?? 0;
+    }
+
+    return AttendanceSummary(
+      workingDays: asInt(json['workingDays']),
+      lateDays: asInt(json['lateDays']),
+      totalLeaves: asInt(json['totalLeaves']),
+      absentDays: asInt(json['absentDays']),
+      payableDays: asInt(json['payableDays']),
+      totalMinutes: asInt(json['totalMinutes']),
+      expectedWorkingHours: asInt(json['expectedWorkingHours']),
+    );
+  }
+}
