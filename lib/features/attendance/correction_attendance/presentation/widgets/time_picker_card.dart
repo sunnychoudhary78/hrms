@@ -31,12 +31,17 @@ class TimePickerCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isProposed ? Colors.white : Colors.grey.shade100,
+          color: isProposed
+              ? Theme.of(context).colorScheme.surface
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isProposed ? Colors.indigo.shade200 : Colors.transparent,
+            color: isProposed
+                ? Theme.of(context).colorScheme.primary.withOpacity(.3)
+                : Colors.transparent,
           ),
         ),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

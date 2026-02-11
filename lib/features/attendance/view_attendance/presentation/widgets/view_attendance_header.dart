@@ -7,6 +7,7 @@ class ViewAttendanceHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
     final auth = ref.watch(authProvider);
 
     final profile = auth.profile;
@@ -22,14 +23,12 @@ class ViewAttendanceHeader extends ConsumerWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        gradient: LinearGradient(
+          colors: [scheme.primary, scheme.primaryContainer],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .18),
+            color: scheme.shadow.withOpacity(.2),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -39,42 +38,45 @@ class ViewAttendanceHeader extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: Colors.white,
+            backgroundColor: scheme.surface,
             backgroundImage: profileUrl.isNotEmpty
                 ? NetworkImage(profileUrl)
                 : const AssetImage('assets/images/profile.jpg')
                       as ImageProvider,
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Welcome back,",
-                  style: TextStyle(fontSize: 13, color: Colors.white70),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.onPrimary.withOpacity(.8),
+                  ),
                 ),
                 Text(
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: scheme.onPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Employee ID · $empId",
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onPrimary.withOpacity(.8),
+                  ),
                 ),
               ],
             ),
           ),
-
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -82,15 +84,15 @@ class ViewAttendanceHeader extends ConsumerWidget {
                 "${now.day.toString().padLeft(2, '0')}/"
                 "${now.month.toString().padLeft(2, '0')}/"
                 "${now.year}",
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: scheme.onPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
                 ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][now.weekday %
                     7],
-                style: const TextStyle(color: Colors.white70),
+                style: TextStyle(color: scheme.onPrimary.withOpacity(.8)),
               ),
             ],
           ),

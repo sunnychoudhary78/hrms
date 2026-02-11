@@ -15,6 +15,8 @@ class LeaveTypeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return DropdownButtonFormField<LeaveBalance>(
       value: selected,
       decoration: const InputDecoration(
@@ -30,7 +32,7 @@ class LeaveTypeDropdown extends StatelessWidget {
               Text(leave.name),
               Text(
                 "${leave.available.toStringAsFixed(0)} days",
-                style: const TextStyle(color: Colors.black54),
+                style: TextStyle(color: scheme.onSurfaceVariant),
               ),
             ],
           ),

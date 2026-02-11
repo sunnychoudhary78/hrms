@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-
 import 'package:lms/features/home/data/models/home_dashboard_model.dart';
+
+class AttendanceColors {
+  static const worked = Color(0xFF16A34A);
+  static const overtime = Color(0xFF22C55E);
+  static const leave = Color(0xFFF59E0B);
+  static const absent = Color(0xFFDC2626);
+  static const late = Color(0xFF7C3AED);
+  static const expected = Color(0xFF94A3B8);
+}
 
 class LastFiveDaysAttendanceCard extends StatelessWidget {
   final List<WeeklyAttendanceBar> days;
@@ -11,7 +19,6 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    /// Max from BOTH worked & expected (worked already capped safely)
     final maxHours =
         days
             .map(
@@ -26,7 +33,7 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: _cardDecoration(),
+      decoration: _cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -35,18 +42,18 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
-          SizedBox(height: 190, child: BarChart(_barChartData(maxY))),
+          SizedBox(height: 190, child: BarChart(_barChartData(context, maxY))),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              _LegendDot(color: Color(0xFF1565C0), label: 'Worked'),
+              _LegendDot(color: AttendanceColors.worked, label: 'Worked'),
               SizedBox(width: 12),
-              _LegendDot(color: Colors.green, label: 'Overtime'),
+              _LegendDot(color: AttendanceColors.overtime, label: 'Overtime'),
               SizedBox(width: 12),
-              _LegendDot(color: Colors.orange, label: 'Capped'),
+              _LegendDot(color: AttendanceColors.leave, label: 'Capped'),
               SizedBox(width: 12),
-              _LegendDot(color: Colors.grey, label: 'Expected'),
+              _LegendDot(color: AttendanceColors.expected, label: 'Expected'),
             ],
           ),
         ],
@@ -54,15 +61,12 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // BAR CHART CONFIG
-  // ─────────────────────────────────────────────
+  BarChartData _barChartData(BuildContext context, double maxY) {
+    final scheme = Theme.of(context).colorScheme;
 
-  BarChartData _barChartData(double maxY) {
     return BarChartData(
       maxY: maxY,
       alignment: BarChartAlignment.spaceBetween,
-
       barTouchData: BarTouchData(
         enabled: true,
         touchTooltipData: BarTouchTooltipData(
@@ -77,41 +81,35 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
               'Expected: ${expected.toStringAsFixed(1)}h'
               '${overtime > 0 ? '\n+${overtime.toStringAsFixed(1)}h overtime' : ''}'
               '${d.isCapped ? '\n⚠ Checkout missing, hours capped' : ''}',
-              const TextStyle(
-                color: Colors.white,
+              TextStyle(
+                color: scheme.onInverseSurface,
                 fontSize: 12,
-                backgroundColor: Colors.black87,
+                backgroundColor: scheme.inverseSurface,
               ),
             );
           },
         ),
       ),
-
-      /// Expected reference line
       extraLinesData: ExtraLinesData(
         horizontalLines: days.map((d) {
           return HorizontalLine(
             y: d.expectedMinutes / 60,
             dashArray: [6, 4],
-            color: Colors.grey.shade400,
+            color: scheme.outlineVariant,
             strokeWidth: 1,
           );
         }).toList(),
       ),
-
       gridData: FlGridData(
         show: true,
         horizontalInterval: 2,
         getDrawingHorizontalLine: (value) =>
-            FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+            FlLine(color: scheme.outlineVariant, strokeWidth: 1),
       ),
-
       borderData: FlBorderData(show: false),
-
       titlesData: FlTitlesData(
         rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -121,7 +119,6 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
                 Text('${value.toInt()}h', style: const TextStyle(fontSize: 11)),
           ),
         ),
-
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -129,49 +126,39 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
           ),
         ),
       ),
-
-      barGroups: _barGroups(),
+      barGroups: _barGroups(context),
     );
   }
 
-  // ─────────────────────────────────────────────
-  // TWO BARS PER DAY
-  // ─────────────────────────────────────────────
-
-  List<BarChartGroupData> _barGroups() {
+  List<BarChartGroupData> _barGroups(BuildContext context) {
     return List.generate(days.length, (index) {
       final d = days[index];
-
       final worked = d.workedMinutes / 60;
       final expected = d.expectedMinutes / 60;
-
       final overtime = (worked - expected).clamp(0, double.infinity);
       final normalWorked = worked - overtime;
 
       final overtimeColor = d.isCapped
-          ? Colors.orange.shade600
-          : Colors.green.shade600;
+          ? AttendanceColors.leave
+          : AttendanceColors.overtime;
 
       return BarChartGroupData(
         x: index,
         barsSpace: 6,
         barRods: [
-          /// EXPECTED
           BarChartRodData(
             toY: expected,
             width: 12,
-            color: Colors.grey.shade300,
+            color: AttendanceColors.expected,
             borderRadius: BorderRadius.circular(6),
           ),
-
-          /// WORKED (with overtime / capped indication)
           BarChartRodData(
             toY: worked,
             width: 12,
             borderRadius: BorderRadius.circular(6),
             rodStackItems: [
               if (normalWorked > 0)
-                BarChartRodStackItem(0, normalWorked, const Color(0xFF1565C0)),
+                BarChartRodStackItem(0, normalWorked, AttendanceColors.worked),
               if (overtime > 0)
                 BarChartRodStackItem(normalWorked, worked, overtimeColor),
             ],
@@ -199,13 +186,15 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
     );
   }
 
-  BoxDecoration _cardDecoration() {
+  BoxDecoration _cardDecoration(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return BoxDecoration(
-      color: Colors.white,
+      color: scheme.surface,
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: scheme.shadow.withOpacity(0.05),
           blurRadius: 10,
           offset: const Offset(0, 6),
         ),
@@ -213,10 +202,6 @@ class LastFiveDaysAttendanceCard extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// LEGEND DOT
-// ─────────────────────────────────────────────
 
 class _LegendDot extends StatelessWidget {
   final Color color;

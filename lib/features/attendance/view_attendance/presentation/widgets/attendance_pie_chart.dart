@@ -19,6 +19,8 @@ class AttendancePieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -32,26 +34,23 @@ class AttendancePieChart extends StatelessWidget {
                   centerSpaceRadius: 60,
                   sectionsSpace: 4,
                   sections: [
-                    _section("Present", present, Colors.green),
-                    _section("Late", late, Colors.orange),
-                    _section("Leave", leave, Colors.blue),
-                    _section("Absent", absent, Colors.red),
+                    _section("Present", present, scheme.primary),
+                    _section("Late", late, scheme.tertiary),
+                    _section("Leave", leave, scheme.secondary),
+                    _section("Absent", absent, scheme.error),
                   ],
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
-            /// Legend
             Wrap(
               spacing: 16,
               runSpacing: 8,
               children: [
-                _legend("Present", present, Colors.green),
-                _legend("Late", late, Colors.orange),
-                _legend("Leave", leave, Colors.blue),
-                _legend("Absent", absent, Colors.red),
+                _legend("Present", present, scheme.primary),
+                _legend("Late", late, scheme.tertiary),
+                _legend("Leave", leave, scheme.secondary),
+                _legend("Absent", absent, scheme.error),
               ],
             ),
           ],
@@ -61,9 +60,7 @@ class AttendancePieChart extends StatelessWidget {
   }
 
   PieChartSectionData _section(String t, int v, Color c) {
-    if (v == 0) {
-      return PieChartSectionData(value: 0);
-    }
+    if (v == 0) return PieChartSectionData(value: 0);
 
     return PieChartSectionData(
       value: v.toDouble(),

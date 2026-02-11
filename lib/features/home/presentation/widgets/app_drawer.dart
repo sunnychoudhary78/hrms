@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lms/app/app_root.dart';
 import 'package:lms/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lms/features/home/presentation/widgets/drawer_item_tile.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
@@ -10,20 +12,18 @@ class AppDrawer extends ConsumerStatefulWidget {
   ConsumerState<AppDrawer> createState() => _AppDrawerState();
 }
 
-class _AppDrawerState extends ConsumerState<AppDrawer> {
+class _AppDrawerState extends ConsumerState<AppDrawer>
+    with TickerProviderStateMixin {
   bool _isLeaveExpanded = false;
   bool _isAttendanceExpanded = false;
 
   @override
   Widget build(BuildContext context) {
+    final route = ModalRoute.of(context)?.settings.name;
     final authState = ref.watch(authProvider);
-
     final profile = authState.profile;
-
-    // ✅ REAL PERMISSIONS FROM BACKEND
     final permissions = authState.permissions;
 
-    // Team dashboard only for manager
     final bool hasApprovePermission = permissions.contains(
       'leave.request.approve',
     );
@@ -32,157 +32,125 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     final empId = profile?.payrollCode ?? "EMP0001";
     final profileImg = authState.profileUrl;
 
+    final scheme = Theme.of(context).colorScheme;
+
+    int index = 0;
+
     return Drawer(
-      backgroundColor: Colors.white,
-      elevation: 8,
+      backgroundColor: scheme.surface,
+      elevation: 12,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topRight: Radius.circular(20),
-          bottomRight: Radius.circular(20),
+          topRight: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
       child: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// SCROLLABLE CONTENT
             Expanded(
               child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(name, empId, profileImg),
 
                     const SizedBox(height: 10),
 
-                    _buildDrawerItem(
+                    DrawerTile(
+                      index: index++,
                       icon: Icons.home_rounded,
                       title: "Home",
+                      isActive: route == "/home",
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, "/home");
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          "/home",
+                          (route) => false,
+                        );
                       },
                     ),
 
-                    _buildDrawerItem(
+                    DrawerTile(
+                      index: index++,
                       icon: Icons.person,
                       title: "Profile",
+                      isActive: route == "/profile",
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.pushNamed(context, "/profile");
                       },
                     ),
 
-                    _buildDrawerItem(
-                      icon: Icons.notifications_rounded,
-                      title: "Notifications",
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, "/notifications");
-                      },
-                    ),
-
                     if (hasApprovePermission)
-                      _buildDrawerItem(
+                      DrawerTile(
+                        index: index++,
                         icon: Icons.dashboard_rounded,
                         title: "Team Dashboard",
+                        isActive: route == "/team-dashboard",
                         onTap: () {
                           Navigator.pop(context);
                           Navigator.pushNamed(context, "/team-dashboard");
                         },
                       ),
 
-                    _buildExpandableItem(
-                      icon: Icons.beach_access_rounded,
+                    _buildExpandable(
+                      index: index++,
                       title: "Leave",
+                      icon: Icons.beach_access_rounded,
                       expanded: _isLeaveExpanded,
-                      onTap: () {
-                        setState(() {
-                          _isLeaveExpanded = !_isLeaveExpanded;
-                        });
-                      },
+                      onTap: () =>
+                          setState(() => _isLeaveExpanded = !_isLeaveExpanded),
                       subItems: [
-                        _buildSubItem(
-                          title: "Leave Balance",
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.pushNamed(context, "/leave-balance");
-                          },
-                        ),
-
-                        _buildSubItem(
-                          title: "Leave Apply",
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.pushNamed(context, "/leave-apply");
-                          },
-                        ),
-
-                        _buildSubItem(
-                          title: "Leave Status",
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.pushNamed(context, "/leave-status");
-                          },
-                        ),
-
+                        _subItem("Leave Balance", "/leave-balance"),
+                        _subItem("Leave Apply", "/leave-apply"),
+                        _subItem("Leave Status", "/leave-status"),
                         if (hasApprovePermission)
-                          _buildSubItem(
-                            title: "Leave Approve/Reject",
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.pushNamed(context, "/leave-approve");
-                            },
-                          ),
+                          _subItem("Leave Approve/Reject", "/leave-approve"),
                       ],
                     ),
 
-                    _buildDrawerItem(
+                    DrawerTile(
+                      index: index++,
                       icon: Icons.lock_outline_rounded,
                       title: "Change Password",
+                      isActive: route == "/change-password",
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.pushNamed(context, "/change-password");
                       },
                     ),
 
-                    _buildExpandableItem(
-                      icon: Icons.access_time_rounded,
+                    _buildExpandable(
+                      index: index++,
                       title: "Attendance",
+                      icon: Icons.access_time_rounded,
                       expanded: _isAttendanceExpanded,
-                      onTap: () {
-                        setState(() {
-                          _isAttendanceExpanded = !_isAttendanceExpanded;
-                        });
-                      },
+                      onTap: () => setState(
+                        () => _isAttendanceExpanded = !_isAttendanceExpanded,
+                      ),
                       subItems: [
-                        _buildSubItem(
-                          title: "Mark Attendance",
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.pushNamed(context, "/mark-attendance");
-                          },
-                        ),
-
-                        _buildSubItem(
-                          title: "View Attendance",
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.pushNamed(context, "/view-attendance");
-                          },
-                        ),
-
+                        _subItem("Mark Attendance", "/mark-attendance"),
+                        _subItem("View Attendance", "/view-attendance"),
                         if (hasApprovePermission)
-                          _buildSubItem(
-                            title: "Attendance Correction",
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.pushNamed(
-                                context,
-                                "/correct-attendance",
-                              );
-                            },
+                          _subItem(
+                            "Attendance Correction",
+                            "/correct-attendance",
                           ),
                       ],
+                    ),
+
+                    DrawerTile(
+                      index: index++,
+                      icon: Icons.settings,
+                      title: "Settings",
+                      isActive: route == "/settings",
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, "/settings");
+                      },
                     ),
 
                     const SizedBox(height: 20),
@@ -191,85 +159,92 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               ),
             ),
 
-            const Divider(height: 1, color: Colors.grey),
+            /// LOGOUT
+            Divider(color: scheme.outlineVariant),
 
-            _buildDrawerItem(
-              icon: Icons.logout_rounded,
-              title: "Logout",
-              color: Colors.redAccent,
-              onTap: () async {
-                await ref.read(authProvider.notifier).logout();
-
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const AppRoot()),
-                  (_) => false,
-                );
-              },
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
+              child: DrawerTile(
+                index: index++,
+                icon: Icons.logout_rounded,
+                title: "Logout",
+                onTap: () async {
+                  await ref.read(authProvider.notifier).logout();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const AppRoot()),
+                    (_) => false,
+                  );
+                },
+              ),
             ),
-
-            const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
 
-  // ================= HEADER =================
-
   Widget _buildHeader(String name, String empId, String img) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // 👇 Use stronger contrast for dark theme
+    final Color startColor = isDark
+        ? const Color(0xFF1E1E2E) // deep charcoal
+        : scheme.primary;
+
+    final Color endColor = isDark
+        ? const Color(0xFF2A2A40) // slightly tinted indigo-black
+        : scheme.primaryContainer;
+
+    final textColor = isDark ? Colors.white : scheme.onPrimary;
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 28, 16, 28),
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFC000), Color(0xFFFFD54F), Color(0xFFFFE082)],
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [startColor, endColor],
         ),
-        borderRadius: const BorderRadius.only(topRight: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(.6),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : null,
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 34,
+            radius: 32,
             backgroundImage: img.isNotEmpty
                 ? NetworkImage(img)
                 : const AssetImage('assets/images/profile.jpg')
                       as ImageProvider,
           ),
-
-          const SizedBox(width: 14),
-
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
                   ),
-                  maxLines: 2,
                 ),
-
-                const SizedBox(height: 6),
-
+                const SizedBox(height: 4),
                 Text(
                   empId,
                   style: TextStyle(
-                    color: Colors.black.withValues(alpha: .85),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    color: textColor.withOpacity(.85),
+                    fontSize: 14,
                   ),
                 ),
               ],
@@ -277,185 +252,74 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           ),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -.15);
   }
 
-  // ================= DRAWER ITEM =================
-
-  Widget _buildDrawerItem({
-    required IconData icon,
+  Widget _buildExpandable({
+    required int index,
     required String title,
-    required VoidCallback onTap,
-    Color color = Colors.black87,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: .05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFFFC000), Color(0xFFFFA000)],
-                      ),
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 20),
-                  ),
-
-                  const SizedBox(width: 14),
-
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ================= EXPANDABLE =================
-
-  Widget _buildExpandableItem({
     required IconData icon,
-    required String title,
     required bool expanded,
     required VoidCallback onTap,
     required List<Widget> subItems,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
+    return Column(
+      children: [
+        DrawerTile(
+          index: index,
+          icon: icon,
+          title: title,
+          onTap: onTap,
+          trailing: AnimatedRotation(
+            turns: expanded ? .5 : 0,
+            duration: const Duration(milliseconds: 250),
+            child: const Icon(Icons.keyboard_arrow_down),
+          ),
         ),
-        child: Column(
-          children: [
-            Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: onTap,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFFFC000), Color(0xFFFFA000)],
-                          ),
-                        ),
-                        child: Icon(icon, color: Colors.white, size: 20),
-                      ),
-
-                      const SizedBox(width: 14),
-
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-
-                      Icon(
-                        expanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 200),
-              firstChild: const SizedBox.shrink(),
-              secondChild: Column(children: subItems),
-              crossFadeState: expanded
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-            ),
-          ],
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          child: expanded
+              ? Column(
+                  children: subItems,
+                ).animate().fade(duration: 200.ms).slideY(begin: -.1)
+              : const SizedBox.shrink(),
         ),
-      ),
+      ],
     );
   }
 
-  // ================= SUB ITEM =================
+  Widget _subItem(String title, String route) {
+    final scheme = Theme.of(context).colorScheme;
 
-  Widget _buildSubItem({required String title, required VoidCallback onTap}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 40, right: 16, top: 4, bottom: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.arrow_right,
-                    color: Colors.black54,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(title, style: const TextStyle(fontSize: 15)),
-                  ),
-                ],
+      padding: const EdgeInsets.only(left: 48, right: 14, top: 4, bottom: 4),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          Navigator.pop(context);
+          Navigator.pushNamed(context, route);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          child: Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(fontSize: 14, color: scheme.onSurface),
+                ),
+              ),
+            ],
           ),
         ),
       ),

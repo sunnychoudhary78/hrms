@@ -78,6 +78,8 @@ class _RequestCorrectionDialogState
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -100,7 +102,7 @@ class _RequestCorrectionDialogState
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close, color: scheme.onSurface),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -122,12 +124,15 @@ class _RequestCorrectionDialogState
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
+                    color: scheme.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     DateFormat('EEEE, d MMM y').format(targetDate),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onPrimaryContainer,
+                    ),
                   ),
                 ),
               ),
@@ -166,9 +171,12 @@ class _RequestCorrectionDialogState
               TextField(
                 controller: reasonController,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Reason",
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: scheme.primary),
+                  ),
                 ),
               ),
 
@@ -178,8 +186,12 @@ class _RequestCorrectionDialogState
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: isSubmitting ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: scheme.primary,
+                    foregroundColor: scheme.onPrimary,
+                  ),
                   child: isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(color: scheme.onPrimary)
                       : const Text("Submit Request"),
                 ),
               ),

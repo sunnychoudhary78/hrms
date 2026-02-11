@@ -18,6 +18,8 @@ class HomeWelcomeAttendanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     final hour = DateTime.now().hour;
 
     final greeting = hour < 12
@@ -36,14 +38,14 @@ class HomeWelcomeAttendanceCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+        gradient: LinearGradient(
+          colors: [scheme.primary, scheme.primaryContainer],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: scheme.shadow.withOpacity(0.12),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -52,80 +54,62 @@ class HomeWelcomeAttendanceCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// ───────── LEFT CONTENT ─────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// Greeting
                 Text(
                   greeting,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                    color: scheme.onPrimary.withOpacity(.75),
+                    fontSize: 13,
+                  ),
                 ),
-
                 const SizedBox(height: 6),
-
-                /// Name
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: scheme.onPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 2),
-
-                /// Role
                 Text(
                   role,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                    color: scheme.onPrimary.withOpacity(.75),
+                    fontSize: 13,
+                  ),
                 ),
-
                 const SizedBox(height: 16),
-
-                /// ───── Status row ─────
                 Row(
                   children: [
                     _StatusChip(text: statusText, color: statusColor),
-
                     const SizedBox(width: 12),
-
                     if (status.checkInTime != null)
                       Text(
                         isCheckedIn
                             ? 'Checked in at ${_fmt(status.checkInTime!)}'
                             : 'Last check-in ${_fmt(status.checkInTime!)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: scheme.onPrimary, fontSize: 13),
                       ),
                   ],
                 ),
               ],
             ),
           ),
-
           const SizedBox(width: 16),
-
-          /// ───────── RIGHT AVATAR ─────────
           _Avatar(name: name, imageUrl: imageUrl),
         ],
       ),
     );
   }
 
-  /// ✅ Always convert to local time before formatting
   String _fmt(DateTime t) {
     return DateFormat('hh:mm a').format(t.toLocal());
   }
 }
-
-/// ─────────────────────────────────────────────
-/// STATUS CHIP
-/// ─────────────────────────────────────────────
 
 class _StatusChip extends StatelessWidget {
   final String text;
@@ -153,10 +137,6 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-/// ─────────────────────────────────────────────
-/// AVATAR WIDGET
-/// ─────────────────────────────────────────────
-
 class _Avatar extends StatelessWidget {
   final String name;
   final String? imageUrl;
@@ -165,18 +145,20 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return CircleAvatar(
       radius: 28,
-      backgroundColor: Colors.white,
+      backgroundColor: scheme.surface,
       backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
           ? NetworkImage(imageUrl!)
           : null,
       child: imageUrl == null || imageUrl!.isEmpty
           ? Text(
               _initials(name),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1565C0),
+                color: scheme.primary,
                 fontSize: 16,
               ),
             )

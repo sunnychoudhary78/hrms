@@ -10,16 +10,18 @@ class CorrectionMobileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: scheme.shadow.withOpacity(0.08),
+            blurRadius: 12,
             offset: const Offset(0, 6),
           ),
         ],
@@ -28,14 +30,13 @@ class CorrectionMobileCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserCell(name: item.userName, image: item.userImage),
-
           const SizedBox(height: 12),
 
           Text(
             item.reason ?? "—",
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
 
           const SizedBox(height: 14),

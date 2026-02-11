@@ -9,8 +9,9 @@ class MarkAttendanceHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
+    final scheme = Theme.of(context).colorScheme;
 
+    final authState = ref.watch(authProvider);
     final profile = authState.profile;
     final profileUrl = authState.profileUrl;
 
@@ -22,7 +23,9 @@ class MarkAttendanceHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF473EEF),
+        gradient: LinearGradient(
+          colors: [scheme.primary, scheme.primaryContainer],
+        ),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -34,42 +37,41 @@ class MarkAttendanceHeader extends ConsumerWidget {
                 : const AssetImage('assets/images/profile.jpg')
                       as ImageProvider,
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Welcome,", style: TextStyle(color: Colors.white70)),
-
+                Text(
+                  "Welcome,",
+                  style: TextStyle(color: scheme.onPrimary.withOpacity(.8)),
+                ),
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: scheme.onPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-
                 Text(
                   "Employee ID: $empId",
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: scheme.onPrimary.withOpacity(.8)),
                 ),
               ],
             ),
           ),
-
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 "${now.day}/${now.month}/${now.year}",
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: scheme.onPrimary),
               ),
-              Text(dayName, style: const TextStyle(color: Colors.white70)),
+              Text(
+                dayName,
+                style: TextStyle(color: scheme.onPrimary.withOpacity(.8)),
+              ),
             ],
           ),
         ],

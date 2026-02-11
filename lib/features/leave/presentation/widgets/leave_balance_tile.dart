@@ -9,6 +9,8 @@ class LeaveBalanceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     final name = balance.name;
     final available = balance.available;
     final carried = balance.carried;
@@ -20,11 +22,11 @@ class LeaveBalanceTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: scheme.shadow.withOpacity(0.06),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -33,16 +35,16 @@ class LeaveBalanceTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// Header
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
                   ),
                 ),
               ),
@@ -57,9 +59,12 @@ class LeaveBalanceTile extends StatelessWidget {
                       color: accentColor,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'days available',
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -68,9 +73,8 @@ class LeaveBalanceTile extends StatelessWidget {
 
           if (carried > 0 || reserved > 0) ...[
             const SizedBox(height: 14),
-            const Divider(height: 1),
+            Divider(color: scheme.outlineVariant),
             const SizedBox(height: 12),
-
             Row(
               children: [
                 if (carried > 0)
@@ -109,13 +113,15 @@ class _MetaText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return RichText(
       text: TextSpan(
-        style: const TextStyle(fontSize: 13),
+        style: TextStyle(fontSize: 13, color: scheme.onSurface),
         children: [
           TextSpan(
             text: '$label: ',
-            style: const TextStyle(color: Colors.black54),
+            style: TextStyle(color: scheme.onSurfaceVariant),
           ),
           TextSpan(
             text: value.toStringAsFixed(0),

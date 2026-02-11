@@ -18,7 +18,6 @@ class AttendanceCalendar extends StatelessWidget {
     this.selectedDay,
   });
 
-  // ✅ Always returns a value (never null)
   AttendanceAggregate _forDay(DateTime d) {
     return aggregates.firstWhere(
       (a) =>
@@ -29,22 +28,22 @@ class AttendanceCalendar extends StatelessWidget {
     );
   }
 
-  // 🎨 Status → Color
-  Color _color(DateTime d) {
+  Color _color(BuildContext context, DateTime d) {
+    final scheme = Theme.of(context).colorScheme;
     final status = _forDay(d).status.toLowerCase();
 
     switch (status) {
       case 'present':
-        return Colors.green;
+        return scheme.primary;
       case 'late':
       case 'half-day':
-        return Colors.orange;
+        return scheme.tertiary;
       case 'leave':
-        return Colors.blue;
+        return scheme.secondary;
       case 'holiday':
-        return Colors.cyan;
+        return scheme.primaryContainer;
       default:
-        return Colors.red.shade300;
+        return scheme.errorContainer;
     }
   }
 
@@ -56,55 +55,50 @@ class AttendanceCalendar extends StatelessWidget {
         focusedDay: focusedDay,
         firstDay: DateTime.utc(2023, 1, 1),
         lastDay: DateTime.utc(2026, 12, 31),
-
         onPageChanged: onMonthChange,
-
-        // ✅ NEW: selection handling
         selectedDayPredicate: (d) => isSameDay(d, selectedDay),
         onDaySelected: (selected, _) => onDaySelected(selected),
-
         headerStyle: const HeaderStyle(
           titleCentered: true,
           formatButtonVisible: false,
         ),
-
         calendarStyle: const CalendarStyle(outsideDaysVisible: false),
-
         calendarBuilders: CalendarBuilders(
-          defaultBuilder: (_, d, __) => _cell(d, _color(d)),
-          todayBuilder: (_, d, __) => _cell(d, _color(d), isToday: true),
-          selectedBuilder: (_, d, __) => _cell(d, _color(d), isSelected: true),
+          defaultBuilder: (_, d, __) => _cell(context, d, _color(context, d)),
+          todayBuilder: (_, d, __) =>
+              _cell(context, d, _color(context, d), isToday: true),
+          selectedBuilder: (_, d, __) =>
+              _cell(context, d, _color(context, d), isSelected: true),
         ),
       ),
     );
   }
 
-  // 📦 Day UI
   Widget _cell(
+    BuildContext context,
     DateTime d,
     Color c, {
     bool isToday = false,
     bool isSelected = false,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.all(4),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: c,
+        color: c.withOpacity(.15),
         borderRadius: BorderRadius.circular(12),
         border: isToday
-            ? Border.all(color: Colors.black87, width: 1.5)
+            ? Border.all(color: scheme.primary, width: 1.5)
             : isSelected
-            ? Border.all(color: Colors.black, width: 1.8)
+            ? Border.all(color: scheme.primary, width: 1.8)
             : null,
       ),
       child: Text(
         "${d.day}",
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: Colors.black,
-        ),
+        style: TextStyle(fontWeight: FontWeight.w600, color: scheme.onSurface),
       ),
     );
   }

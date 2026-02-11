@@ -60,14 +60,15 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final req = widget.req;
 
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -79,14 +80,15 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
                   Expanded(
                     child: Text(
                       "Review ${req.type.toLowerCase()} request",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: scheme.onSurface,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close, color: scheme.onSurface),
                     onPressed: _submitting
                         ? null
                         : () => Navigator.pop(context),
@@ -95,18 +97,20 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
               ),
 
               const SizedBox(height: 8),
-              Text(req.userName, style: TextStyle(color: Colors.grey.shade700)),
+
+              Text(
+                req.userName,
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
 
               const SizedBox(height: 16),
 
-              /// correction details
               if (req.isCorrection) ...[
                 _InfoRow("Proposed In", req.proposedCheckIn),
                 _InfoRow("Proposed Out", req.proposedCheckOut),
                 const SizedBox(height: 12),
               ],
 
-              /// reason
               const Text(
                 "Reason",
                 style: TextStyle(fontWeight: FontWeight.w600),
@@ -116,26 +120,28 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
 
               const SizedBox(height: 16),
 
-              /// manager note
               TextField(
                 controller: _noteController,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Manager Note (optional)",
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: scheme.primary),
+                  ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              /// actions
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _submitting ? null : () => _update('REJECTED'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
+                        foregroundColor: scheme.error,
+                        side: BorderSide(color: scheme.error),
                       ),
                       child: _submitting
                           ? const SizedBox(
@@ -151,15 +157,16 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
                     child: ElevatedButton(
                       onPressed: _submitting ? null : () => _update('APPROVED'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: scheme.primary,
+                        foregroundColor: scheme.onPrimary,
                       ),
                       child: _submitting
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 16,
                               width: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: scheme.onPrimary,
                               ),
                             )
                           : const Text("Approve"),

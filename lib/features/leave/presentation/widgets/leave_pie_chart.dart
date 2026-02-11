@@ -10,10 +10,12 @@ class LeavePieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final totalAvailable = leaves.fold<double>(0, (s, l) => s + l.available);
 
     return Card(
       elevation: 6,
+      color: scheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -35,36 +37,42 @@ class LeavePieChart extends StatelessWidget {
                       color: LeaveColorMapper.colorFor(l.name),
                       radius: 40,
                       title: '${percent.toStringAsFixed(0)}%',
-                      titleStyle: const TextStyle(
+                      titleStyle: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: scheme.onPrimary,
                       ),
                     );
                   }).toList(),
                 ),
               ),
 
-              /// Center summary (unchanged)
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     "Available",
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     totalAvailable.toStringAsFixed(1),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      color: scheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     "Days",
-                    style: TextStyle(fontSize: 12, color: Colors.black45),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

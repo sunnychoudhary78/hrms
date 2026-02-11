@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 class LiveClockCard extends StatelessWidget {
   final String workingTime;
   final double progress;
-
   final TimeOfDay? shiftStart;
   final TimeOfDay? shiftEnd;
 
@@ -18,17 +17,16 @@ class LiveClockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceColor = Colors.white;
-    final primaryColor = const Color(0xFF6366F1); // same indigo feel
+    final scheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: surfaceColor,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.04),
+            color: scheme.shadow.withOpacity(.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -36,7 +34,6 @@ class LiveClockCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // ───── SHIFT LABELS ─────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -50,19 +47,12 @@ class LiveClockCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // ───── ARC + TIME ─────
           LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth;
-
               final arcWidth = width * 0.75;
               final arcHeight = arcWidth / 2;
-
-              final timeFontSize = arcWidth * 0.14;
-              final labelFontSize = arcWidth * 0.07;
 
               return Stack(
                 alignment: Alignment.center,
@@ -71,38 +61,28 @@ class LiveClockCard extends StatelessWidget {
                     width: arcWidth,
                     height: arcHeight,
                     child: CustomPaint(
-                      painter: _ModernArcPainter(progress, primaryColor),
+                      painter: _ModernArcPainter(progress, scheme.primary),
                     ),
                   ),
-
                   Positioned(
                     bottom: 0,
                     child: Column(
                       children: [
-                        // ⏱ Working time
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            workingTime,
-                            style: TextStyle(
-                              fontSize: timeFontSize,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1,
-                            ),
+                        Text(
+                          workingTime,
+                          style: TextStyle(
+                            fontSize: arcWidth * 0.14,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-
                         const SizedBox(height: 4),
-
-                        // 📄 Subtitle
                         Text(
                           workingTime == "00:00"
                               ? "Not punched in"
                               : "Working hours",
                           style: TextStyle(
-                            fontSize: labelFontSize,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
+                            fontSize: arcWidth * 0.07,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -118,8 +98,6 @@ class LiveClockCard extends StatelessWidget {
   }
 }
 
-// ───────────────────────────────────────
-
 class _ShiftLabel extends StatelessWidget {
   final String title;
   final String time;
@@ -128,6 +106,8 @@ class _ShiftLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: title == "Shift Start"
           ? CrossAxisAlignment.start
@@ -135,26 +115,24 @@ class _ShiftLabel extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: Colors.grey,
+            color: scheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           time,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1E293B),
+            color: scheme.onSurface,
           ),
         ),
       ],
     );
   }
 }
-
-// ───────────────────────────────────────
 
 class _ModernArcPainter extends CustomPainter {
   final double progress;
@@ -167,7 +145,6 @@ class _ModernArcPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height);
     final rect = Rect.fromCircle(center: center, radius: size.width / 2);
 
-    // Base arc
     final basePaint = Paint()
       ..color = Colors.grey.withOpacity(.12)
       ..strokeWidth = 12
@@ -176,7 +153,6 @@ class _ModernArcPainter extends CustomPainter {
 
     canvas.drawArc(rect, math.pi, math.pi, false, basePaint);
 
-    // Progress arc
     if (progress > 0) {
       final progressPaint = Paint()
         ..strokeWidth = 12

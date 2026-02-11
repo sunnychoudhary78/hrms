@@ -19,70 +19,116 @@ class LeaveApproveCard extends StatefulWidget {
   State<LeaveApproveCard> createState() => _LeaveApproveCardState();
 }
 
-class _LeaveApproveCardState extends State<LeaveApproveCard> {
+class _LeaveApproveCardState extends State<LeaveApproveCard>
+    with SingleTickerProviderStateMixin {
   bool expanded = false;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final r = widget.request;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: scheme.surface,
+        boxShadow: [
+          BoxShadow(
+            blurRadius: expanded ? 18 : 10,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+            color: scheme.shadow.withOpacity(0.06),
+          ),
+        ],
+      ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(20),
         onTap: () => setState(() => expanded = !expanded),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   CircleAvatar(
+                    radius: 28,
+                    backgroundColor: scheme.surfaceContainerLow,
                     backgroundImage: r.profilePicture.isNotEmpty
                         ? NetworkImage(r.profilePicture)
                         : null,
-                    radius: 28,
                     child: r.profilePicture.isEmpty
-                        ? const Icon(Icons.person)
+                        ? Icon(
+                            Icons.person,
+                            size: 28,
+                            color: scheme.onSurfaceVariant,
+                          )
                         : null,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          r.employeeCode,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          r.employeeName,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurface,
+                          ),
                         ),
-                        Text(r.employeeName),
-                        Text(r.designation),
-                        Text("Dept: ${r.department}"),
+                        const SizedBox(height: 4),
+                        Text(
+                          r.leaveType,
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ),
+
                   _statusChip(r.status),
                 ],
               ),
 
-              if (expanded) ...[
-                const SizedBox(height: 12),
-                const Divider(),
-                Text("Leave: ${r.leaveType}"),
-                Text(
-                  "From: ${DateFormat('dd MMM yyyy').format(DateTime.parse(r.startDate))}",
-                ),
-                Text(
-                  "To: ${DateFormat('dd MMM yyyy').format(DateTime.parse(r.endDate))}",
-                ),
-                Text("Days: ${r.days}"),
-                Text("Reason: ${r.reason}"),
+              AnimatedCrossFade(
+                firstChild: const SizedBox(),
+                secondChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 18),
+                    Divider(color: scheme.outlineVariant),
+                    const SizedBox(height: 12),
 
-                LeaveApproveActions(
-                  request: r,
-                  onApprove: widget.onApprove,
-                  onReject: widget.onReject,
+                    _infoRow(
+                      Icons.calendar_today,
+                      "Duration",
+                      "${_format(r.startDate)} → ${_format(r.endDate)}",
+                    ),
+                    const SizedBox(height: 8),
+                    _infoRow(Icons.timelapse, "Total Days", "${r.days}"),
+                    const SizedBox(height: 8),
+                    _infoRow(Icons.notes, "Reason", r.reason),
+                    const SizedBox(height: 16),
+
+                    LeaveApproveActions(
+                      request: r,
+                      onApprove: widget.onApprove,
+                      onReject: widget.onReject,
+                    ),
+                  ],
                 ),
-              ],
+                crossFadeState: expanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 250),
+              ),
             ],
           ),
         ),
@@ -90,27 +136,68 @@ class _LeaveApproveCardState extends State<LeaveApproveCard> {
     );
   }
 
+  Widget _infoRow(IconData icon, String label, String value) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+        const SizedBox(width: 10),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(color: scheme.onSurface, fontSize: 14),
+              children: [
+                TextSpan(
+                  text: "$label: ",
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(text: value),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _statusChip(String status) {
     final s = status.toLowerCase();
 
-    Color bg = Colors.orange.shade100;
-    Color fg = Colors.orange.shade800;
+    Color start = Colors.orange.shade400;
+    Color end = Colors.orange.shade600;
 
     if (s == "approved") {
-      bg = Colors.green.shade100;
-      fg = Colors.green.shade800;
+      start = Colors.green.shade400;
+      end = Colors.green.shade600;
     } else if (s == "rejected") {
-      bg = Colors.red.shade100;
-      fg = Colors.red.shade800;
+      start = Colors.red.shade400;
+      end = Colors.red.shade600;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(colors: [start, end]),
+        borderRadius: BorderRadius.circular(30),
       ),
-      child: Text(status, style: TextStyle(color: fg)),
+      child: Text(
+        status,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
+  }
+
+  String _format(String date) {
+    try {
+      return DateFormat('dd MMM yyyy').format(DateTime.parse(date));
+    } catch (_) {
+      return date;
+    }
   }
 }

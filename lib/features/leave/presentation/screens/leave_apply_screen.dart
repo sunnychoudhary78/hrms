@@ -1,17 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
+import 'package:lms/shared/widgets/app_bar.dart';
 import '../providers/leave_apply_provider.dart';
 import '../providers/leave_balance_provider.dart';
 import '../widgets/leave_type_dropdown.dart';
 import '../widgets/date_range_picker.dart';
 import '../widgets/reason_input.dart';
 import '../widgets/submit_button.dart';
-import '../../../home/presentation/widgets/app_drawer.dart';
 import '../../data/models/leave_balance_model.dart';
 
-/// ---- ENUMS (domain-safe, backend-aligned) ----
 enum DayType { full, half }
 
 enum HalfDayPart { am, pm }
@@ -25,24 +24,19 @@ class LeaveApplyScreen extends ConsumerStatefulWidget {
 
 class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
   LeaveBalance? selectedLeave;
-
   DateTime? fromDate;
   DateTime? toDate;
-
   DayType dayType = DayType.full;
   HalfDayPart? halfDayPart;
-
   String reason = '';
   File? document;
 
-  /// ---- DOCUMENT RULE ----
   bool get isDocumentRequired {
     if (selectedLeave == null) return false;
     final name = selectedLeave!.name.toLowerCase();
     return name.contains('maternity') || name.contains('paternity');
   }
 
-  /// ---- SUBMIT ----
   Future<void> _submit() async {
     if (selectedLeave == null ||
         fromDate == null ||
@@ -87,26 +81,18 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final balanceAsync = ref.watch(leaveBalanceProvider);
     final applyState = ref.watch(leaveApplyProvider);
 
     return Scaffold(
-      drawer: const AppDrawer(),
-      backgroundColor: const Color(0xFFF5F8FA),
+      backgroundColor: scheme.surfaceContainerLowest,
       resizeToAvoidBottomInset: true,
-
-      appBar: AppBar(
-        title: const Text("Apply Leave"),
-        backgroundColor: Colors.indigo,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+      appBar: const AppAppBar(
+        title: "Apply Leave",
+        showBack: false, // 👈 Root screen → no back button
       ),
-
-      /// ---------------- BODY ----------------
+      drawer: AppDrawer(),
       body: balanceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
@@ -121,9 +107,7 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                 onChanged: (leave) => setState(() => selectedLeave = leave),
               ),
             ),
-
             const SizedBox(height: 16),
-
             _SectionCard(
               title: "Duration",
               child: Column(
@@ -141,7 +125,6 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                       });
                     },
                   ),
-
                   if (dayType == DayType.half) ...[
                     const SizedBox(height: 12),
                     _HalfDaySelector(
@@ -149,16 +132,16 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                       onChanged: (v) => setState(() => halfDayPart = v),
                     ),
                   ],
-
                   const SizedBox(height: 16),
-
                   DateRangePicker(
                     from: fromDate,
                     to: toDate,
                     onFromPick: (d) {
                       setState(() {
                         fromDate = d;
-                        if (dayType == DayType.half) toDate = d;
+                        if (dayType == DayType.half) {
+                          toDate = d;
+                        }
                       });
                     },
                     onToPick: (d) {
@@ -174,14 +157,11 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
             _SectionCard(
               title: "Reason",
               child: ReasonInput(onChanged: (v) => reason = v),
             ),
-
             if (isDocumentRequired) ...[
               const SizedBox(height: 16),
               _SectionCard(
@@ -191,17 +171,13 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                   label: Text(
                     document == null ? "Attach Document" : "Document Selected",
                   ),
-                  onPressed: () async {
-                    // TODO: file picker
-                  },
+                  onPressed: () {},
                 ),
               ),
             ],
           ],
         ),
       ),
-
-      /// ---------------- STEP 6: STICKY SUBMIT ----------------
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),

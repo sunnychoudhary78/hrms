@@ -4,9 +4,10 @@ import 'package:lms/features/attendance/correction_attendance/presentation/dialo
 import 'package:lms/features/attendance/view_attendance/presentation/providers/view_attendance_provider.dart';
 import 'package:lms/features/attendance/view_attendance/presentation/widgets/attendance_calender.dart';
 import 'package:lms/features/attendance/view_attendance/presentation/widgets/view_attendance_header.dart';
+import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
+import 'package:lms/shared/widgets/app_bar.dart';
 import '../widgets/attendance_summary_grid.dart';
 import '../widgets/attendance_pie_chart.dart';
-import '../../../../home/presentation/widgets/app_drawer.dart';
 
 class ViewAttendanceScreen extends ConsumerStatefulWidget {
   const ViewAttendanceScreen({super.key});
@@ -22,27 +23,26 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final async = ref.watch(viewAttendanceProvider);
 
     return Scaffold(
-      drawer: const AppDrawer(),
-
-      appBar: AppBar(
-        title: const Text("Employee Attendance"),
-        centerTitle: true,
-      ),
-
+      appBar: AppAppBar(title: "View Attendance"),
+      drawer: AppDrawer(),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-
         error: (e, _) => Center(child: Text(e.toString())),
-
         data: (state) {
           final aggregates = state.aggregates;
           final summary = state.summary;
 
           if (summary == null) {
-            return const Center(child: Text("No summary available"));
+            return Center(
+              child: Text(
+                "No summary available",
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+            );
           }
 
           return SingleChildScrollView(
@@ -50,12 +50,9 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// 👤 Header
                 const ViewAttendanceHeader(),
-
                 const SizedBox(height: 24),
 
-                /// 📅 Calendar Section
                 _Section(
                   title: "Attendance Calendar",
                   child: AttendanceCalendar(
@@ -74,7 +71,6 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
 
                 const SizedBox(height: 20),
 
-                /// ✏️ Correction CTA
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -97,7 +93,6 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
 
                 const SizedBox(height: 28),
 
-                /// 📊 Summary
                 _Section(
                   title: "Monthly Summary",
                   child: AttendanceSummaryGrid(summary: summary),
@@ -105,7 +100,6 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
 
                 const SizedBox(height: 28),
 
-                /// 🍩 Breakdown
                 _Section(
                   title: "Attendance Breakdown",
                   child: AttendancePieChart(
@@ -124,9 +118,6 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
   }
 }
 
-/// ─────────────────────────────────────────
-/// 🔹 Section Wrapper (standard HR pattern)
-/// ─────────────────────────────────────────
 class _Section extends StatelessWidget {
   final String title;
   final Widget child;

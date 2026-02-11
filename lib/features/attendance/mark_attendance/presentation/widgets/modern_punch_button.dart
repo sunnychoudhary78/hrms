@@ -16,6 +16,7 @@ class ModernPunchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final bool disabled = onPressed == null;
 
     return GestureDetector(
@@ -31,7 +32,7 @@ class ModernPunchButton extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-          color: disabled ? Colors.grey[300] : null,
+          color: disabled ? scheme.surfaceContainerHighest : null,
           borderRadius: BorderRadius.circular(20),
           boxShadow: disabled
               ? []
@@ -48,14 +49,14 @@ class ModernPunchButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: disabled ? Colors.grey[500] : Colors.white,
+              color: disabled ? scheme.onSurfaceVariant : scheme.onPrimary,
               size: 20,
             ),
             const SizedBox(width: 10),
             Text(
               text,
               style: TextStyle(
-                color: disabled ? Colors.grey[600] : Colors.white,
+                color: disabled ? scheme.onSurfaceVariant : scheme.onPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),

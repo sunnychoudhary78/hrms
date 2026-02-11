@@ -37,26 +37,37 @@ class ManagerLeaveRequest {
   });
 
   factory ManagerLeaveRequest.fromJson(Map<String, dynamic> json) {
+    final requestedDates = (json['requestedDates'] as List?) ?? [];
+
     return ManagerLeaveRequest(
-      id: json['id'],
-      status: json['status'],
-      startDate: json['startDate'],
-      endDate: json['endDate'],
-      days: (json['days'] as num).toDouble(),
+      id: json['id'] ?? '',
+      status: json['status'] ?? '',
+      startDate: json['startDate'] ?? '',
+      endDate: json['endDate'] ?? '',
+
+      // ✅ Backend no longer sends "days"
+      // Calculate from requestedDates
+      days: requestedDates.length.toDouble(),
+
       isHalfDay: json['isHalfDay'] ?? false,
       halfDayPart: json['halfDayPart'],
       reason: json['reason'] ?? '',
-      leaveType: json['leaveType']['name'],
 
-      employeeName: json['employee']['name'],
-      employeeCode: json['employee']['payrollCode'] ?? '',
-      designation: json['employee']['designation'] ?? '',
-      department: json['employee']['department'] ?? '',
-      profilePicture: json['employee']['profilePicture'] ?? '',
+      // ✅ Correct key: leave_type
+      leaveType: json['leave_type']?['name'] ?? '',
 
-      revocationRequestedDates: (json['revocationRequestedDates'] ?? [])
-          .map<String>((e) => e.toString())
-          .toList(),
+      // ✅ Correct key: user
+      employeeName: json['user']?['name'] ?? '',
+      employeeCode: '', // Not available in response
+      designation: '', // Not available
+      department: '', // Not available
+      profilePicture: '', // Not available
+
+      revocationRequestedDates:
+          (json['revocationRequestedDates'] as List?)
+              ?.map<String>((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/features/dashboard/data/models/team_dashboard_model.dart';
 import 'package:lms/features/dashboard/presentation/providers/team_dashboard_proividers.dart';
+import 'package:lms/features/dashboard/presentation/widgets/manager_stat_card.dart';
+import 'package:lms/features/dashboard/presentation/widgets/team_member_card.dart';
 import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 
 class TeamDashboardScreen extends ConsumerStatefulWidget {
@@ -21,34 +23,11 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
 
     return Scaffold(
       drawer: const AppDrawer(),
-      backgroundColor: const Color(0xFFF5F7FA),
-
-      appBar: AppBar(
-        backgroundColor: Colors.indigo,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: const Text(
-          'Team Dashboard',
-          style: TextStyle(color: Colors.white),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => ref.read(teamDashboardProvider.notifier).refresh(),
-          ),
-        ],
-      ),
-
+      backgroundColor: const Color(0xFFF4F6FB),
       body: dashboardAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-
         error: (e, _) =>
             Center(child: Text(e.toString(), textAlign: TextAlign.center)),
-
         data: (dashboard) {
           final filtered = dashboard.employees.where((e) {
             final q = searchQuery.toLowerCase();
@@ -57,57 +36,96 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
                 e.email.toLowerCase().contains(q);
           }).toList();
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _searchBar(),
-
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    _stat("Total", dashboard.total, Icons.groups, [
-                      Colors.blue,
-                      Colors.lightBlue,
-                    ]),
-                    const SizedBox(width: 12),
-                    _stat("Present", dashboard.present, Icons.check_circle, [
-                      Colors.green,
-                      Colors.lightGreen,
-                    ]),
-                    const SizedBox(width: 12),
-                    _stat("Absent", dashboard.absent, Icons.cancel, [
-                      Colors.red,
-                      Colors.redAccent,
-                    ]),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Team Members (${filtered.length})",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+          return CustomScrollView(
+            slivers: [
+              /// Premium Header
+              SliverAppBar(
+                expandedHeight: 160,
+                pinned: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                flexibleSpace: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF4A55A2), Color(0xFF7895CB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: const FlexibleSpaceBar(
+                    titlePadding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    title: Text(
+                      "Team Overview",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                      ),
                     ),
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 12),
+              /// Body
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _searchBar(),
+                      const SizedBox(height: 24),
 
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _employeeTile(filtered[i]),
+                      /// Stats
+                      Row(
+                        children: [
+                          ManagerStatCard(
+                            title: "Total",
+                            value: dashboard.total,
+                            icon: Icons.groups_rounded,
+                          ),
+                          const SizedBox(width: 12),
+                          ManagerStatCard(
+                            title: "Present",
+                            value: dashboard.present,
+                            icon: Icons.check_circle_rounded,
+                          ),
+                          const SizedBox(width: 12),
+                          ManagerStatCard(
+                            title: "Absent",
+                            value: dashboard.absent,
+                            icon: Icons.cancel_rounded,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      Text(
+                        "Team Members (${filtered.length})",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      ...filtered.map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: TeamMemberCard(
+                            employee: e,
+                            onTap: () => _showEmployeeDetails(e),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
@@ -116,96 +134,25 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
 
   Widget _searchBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: TextField(
         onChanged: (v) => setState(() => searchQuery = v),
         decoration: const InputDecoration(
-          icon: Icon(Icons.search),
-          hintText: 'Search by name, ID, or email',
+          icon: Icon(Icons.search_rounded),
+          hintText: "Search team member...",
           border: InputBorder.none,
         ),
-      ),
-    );
-  }
-
-  Widget _stat(String title, int value, IconData icon, List<Color> colors) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(height: 12),
-            Text(
-              value.toString(),
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(title, style: const TextStyle(color: Colors.white70)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _employeeTile(TeamEmployee emp) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _showEmployeeDetails(emp),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(child: Text(emp.name[0])),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    emp.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    emp.employeeId,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            _status(emp.isPresent),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _status(bool present) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: present ? Colors.green : Colors.red,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        present ? 'Present' : 'Absent',
-        style: const TextStyle(color: Colors.white),
       ),
     );
   }
@@ -214,24 +161,25 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               emp.name,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _row("Employee ID", emp.employeeId),
             _row("Email", emp.email),
             _row("Contact", emp.contact),
             _row("Manager", emp.managerName),
-            const SizedBox(height: 16),
-            _status(emp.isPresent),
+            const SizedBox(height: 20),
+            TeamMemberCard.statusBadge(emp.isPresent),
           ],
         ),
       ),
@@ -240,11 +188,11 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
 
   Widget _row(String l, String v) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           SizedBox(
-            width: 100,
+            width: 110,
             child: Text(l, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           Expanded(child: Text(v)),

@@ -9,9 +9,14 @@ class SessionLogs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     if (sessions.isEmpty) {
-      return const Center(
-        child: Text("No sessions yet", style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(
+          "No sessions yet",
+          style: TextStyle(color: scheme.onSurfaceVariant),
+        ),
       );
     }
 
@@ -34,76 +39,63 @@ class SessionLogs extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: scheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.withOpacity(.05)),
+            border: Border.all(color: scheme.outlineVariant),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ───── STATUS ICON ─────
               CircleAvatar(
                 backgroundColor: isOngoing
-                    ? const Color(0xFF6366F1).withOpacity(.1)
-                    : Colors.grey[100],
+                    ? scheme.primary.withOpacity(.1)
+                    : scheme.surfaceContainerHigh,
                 child: Icon(
                   isOngoing ? Icons.timer_outlined : Icons.check_circle_outline,
-                  color: isOngoing ? const Color(0xFF6366F1) : Colors.grey,
+                  color: isOngoing ? scheme.primary : scheme.onSurfaceVariant,
                   size: 20,
                 ),
               ),
-
               const SizedBox(width: 16),
-
-              // ───── DETAILS ─────
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 📅 DATE
                     Text(
                       dateLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey,
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
-                    // 🟢 STATUS TEXT
                     Text(
                       isOngoing ? "Ongoing Session" : "Completed Session",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: Color(0xFF1E293B),
+                        color: scheme.onSurface,
                       ),
                     ),
-
                     const SizedBox(height: 6),
-
-                    // ⏱ IN / OUT TIME
                     Text(
                       "In: $punchInLabel  •  Out: $punchOutLabel",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey,
+                        color: scheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              // ───── DURATION ─────
               if (!isOngoing)
                 Text(
                   _calculateDiff(inTime, outTime),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF10B981), // emerald
+                    color: scheme.tertiary,
                     fontSize: 13,
                   ),
                 ),
@@ -116,12 +108,9 @@ class SessionLogs extends StatelessWidget {
 
   String _calculateDiff(DateTime start, DateTime? end) {
     if (end == null) return "";
-
     final diff = end.difference(start);
-
     final hours = diff.inHours;
     final minutes = diff.inMinutes % 60;
-
     return "${hours}h ${minutes}m";
   }
 }

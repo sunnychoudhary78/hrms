@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lms/core/providers/global_loading_provider.dart';
+import 'package:lms/shared/widgets/global_loader.dart';
 
 import '../core/notifications/notification_action.dart';
 import '../core/notifications/notification_router.dart';
@@ -51,21 +53,29 @@ class _AppRootState extends ConsumerState<AppRoot> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final isGlobalLoading = ref.watch(globalLoadingProvider);
 
-    // ⏳ Loading
+    Widget content;
+
+    // ⏳ Auth Loading
     if (authState.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      content = const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
-
     // ❌ Not logged in
-    if (authState.profile == null) {
-      return const LoginScreen();
+    else if (authState.profile == null) {
+      content = const LoginScreen();
+    }
+    // ✅ Logged in
+    else {
+      _initPushIfNeeded();
+      content = const HomeScreen();
     }
 
-    // ✅ Logged in → init push ONCE
-    _initPushIfNeeded();
-
-    return const HomeScreen();
+    return Stack(
+      children: [content, if (isGlobalLoading) const GlobalLoader()],
+    );
   }
 
   // ─────────────────────────────────────────────

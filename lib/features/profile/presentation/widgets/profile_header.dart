@@ -17,16 +17,17 @@ class CurvedProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Stack(
       children: [
-        /// Background with curve
         ClipPath(
           clipper: BottomCurveClipper(),
           child: Container(
-            height: 400,
-            decoration: const BoxDecoration(
+            height: 300,
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+                colors: [scheme.primary, scheme.primaryContainer],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -34,24 +35,21 @@ class CurvedProfileHeader extends StatelessWidget {
           ),
         ),
 
-        /// Decorative bubbles
-        Positioned(top: 40, left: -20, child: _bubble(120)),
-        Positioned(top: 120, right: -30, child: _bubble(160)),
+        Positioned(top: 40, left: -20, child: _bubble(context, 120)),
+        Positioned(top: 120, right: 30, child: _bubble(context, 100)),
+        Positioned(top: -80, right: -70, child: _bubble(context, 180)),
 
-        /// Content
-        /// Content
         Positioned.fill(
           child: Padding(
-            padding: const EdgeInsets.only(top: 70),
+            padding: const EdgeInsets.only(top: 20),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Stack(
                   alignment: Alignment.bottomRight,
                   children: [
                     CircleAvatar(
-                      radius: 52,
-                      backgroundColor: Colors.white,
+                      radius: 40,
+                      backgroundColor: scheme.surface,
                       backgroundImage: imageUrl.isNotEmpty
                           ? NetworkImage(imageUrl)
                           : const AssetImage('assets/images/profile.jpg')
@@ -61,14 +59,14 @@ class CurvedProfileHeader extends StatelessWidget {
                       onTap: onEditTap,
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: scheme.surface,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.edit,
                           size: 16,
-                          color: Color(0xFF1565C0),
+                          color: scheme.primary,
                         ),
                       ),
                     ),
@@ -77,15 +75,11 @@ class CurvedProfileHeader extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: scheme.onPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
-                ),
-                Text(
-                  "Employee ID: $empId",
-                  style: const TextStyle(color: Colors.white70),
                 ),
               ],
             ),
@@ -95,13 +89,15 @@ class CurvedProfileHeader extends StatelessWidget {
     );
   }
 
-  Widget _bubble(double size) {
+  Widget _bubble(BuildContext context, double size) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.08),
+        color: scheme.onPrimary.withOpacity(0.08),
       ),
     );
   }

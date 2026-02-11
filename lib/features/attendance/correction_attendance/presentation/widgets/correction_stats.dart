@@ -8,6 +8,8 @@ class CorrectionStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     final pendingCorrections = requests
         .where((e) => e.isCorrection && e.isPending)
         .length;
@@ -21,13 +23,13 @@ class CorrectionStats extends StatelessWidget {
         _StatCard(
           label: "Pending Corrections",
           value: pendingCorrections.toString(),
-          color: Colors.orange,
+          color: scheme.tertiary,
         ),
         const SizedBox(width: 12),
         _StatCard(
           label: "Pending Remote",
           value: pendingRemote.toString(),
-          color: Colors.teal,
+          color: scheme.primary,
         ),
       ],
     );

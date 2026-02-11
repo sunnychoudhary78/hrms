@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:lms/features/home/data/models/home_dashboard_model.dart';
 
+class AttendanceColors {
+  static const worked = Color(0xFF16A34A);
+  static const overtime = Color(0xFF22C55E);
+  static const leave = Color(0xFFF59E0B);
+  static const absent = Color(0xFFDC2626);
+  static const late = Color(0xFF7C3AED);
+  static const expected = Color(0xFF94A3B8);
+}
+
 class AttendanceOverviewCard extends StatelessWidget {
   final HomeDashboardModel dashboard;
 
@@ -9,6 +18,8 @@ class AttendanceOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -21,25 +32,18 @@ class AttendanceOverviewCard extends StatelessWidget {
               'Attendance Monthly Overview',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-
             const SizedBox(height: 16),
-
-            /// 🟠 PIE + LEGEND (ROW)
             SizedBox(
               height: 180,
               child: Row(
                 children: [
-                  /// Pie chart
                   Expanded(
                     flex: 3,
                     child: _AttendancePieChart(
                       distribution: dashboard.distribution,
                     ),
                   ),
-
-                  SizedBox(width: 30),
-
-                  /// Legend (right side)
+                  const SizedBox(width: 30),
                   Expanded(
                     flex: 2,
                     child: _PieLegend(distribution: dashboard.distribution),
@@ -47,13 +51,9 @@ class AttendanceOverviewCard extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-            const Divider(),
-
+            Divider(color: scheme.outlineVariant),
             const SizedBox(height: 12),
-
-            /// 🔵 HORIZONTAL BAR
             _WorkedVsExpectedBar(attendance: dashboard.attendance),
           ],
         ),
@@ -74,10 +74,10 @@ class _AttendancePieChart extends StatelessWidget {
         sectionsSpace: 2,
         centerSpaceRadius: 40,
         sections: [
-          _section(distribution.worked, Colors.green),
-          _section(distribution.leave, Colors.orange),
-          _section(distribution.absent, Colors.red),
-          _section(distribution.late, Colors.blue),
+          _section(distribution.worked, AttendanceColors.worked),
+          _section(distribution.leave, AttendanceColors.leave),
+          _section(distribution.absent, AttendanceColors.absent),
+          _section(distribution.late, AttendanceColors.late),
         ],
       ),
     );
@@ -100,17 +100,17 @@ class _PieLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        _LegendItem(color: Colors.green, label: 'Worked'),
+      children: [
+        _LegendItem(color: AttendanceColors.worked, label: 'Worked'),
         SizedBox(height: 12),
-        _LegendItem(color: Colors.orange, label: 'Leave'),
+        _LegendItem(color: AttendanceColors.leave, label: 'Leave'),
         SizedBox(height: 12),
-        _LegendItem(color: Colors.red, label: 'Absent'),
+        _LegendItem(color: AttendanceColors.absent, label: 'Absent'),
         SizedBox(height: 12),
-        _LegendItem(color: Colors.blue, label: 'Late'),
+        _LegendItem(color: AttendanceColors.late, label: 'Late'),
       ],
     );
   }
@@ -146,26 +146,21 @@ class _WorkedVsExpectedBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final worked = attendance.workedHours;
-    final expected = attendance.expectedHours;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ModernProgressBar(
           label: 'Worked',
-          value: worked,
-          max: expected,
-          color: Colors.green,
+          value: attendance.workedHours,
+          max: attendance.expectedHours,
+          color: AttendanceColors.worked,
         ),
-
         const SizedBox(height: 14),
-
         _ModernProgressBar(
           label: 'Expected',
-          value: expected,
-          max: expected,
-          color: Colors.blueGrey,
+          value: attendance.expectedHours,
+          max: attendance.expectedHours,
+          color: AttendanceColors.expected,
         ),
       ],
     );
@@ -187,12 +182,12 @@ class _ModernProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final double percent = max == 0 ? 0.0 : (value / max).clamp(0, 1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        /// Label + value
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -217,15 +212,12 @@ class _ModernProgressBar extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 8),
-
-        /// Background track
         Container(
-          height: 16, // 🔥 thicker bar
+          height: 16,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: scheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(20),
           ),
           child: FractionallySizedBox(

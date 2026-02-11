@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 import 'package:lms/features/home/presentation/widgets/home_dashboard_view.dart';
+import 'package:lms/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:lms/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:lms/shared/widgets/app_bar.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -9,11 +12,63 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
+      appBar: AppAppBar(
+        title: "Home",
+        showBack: false,
+        actions: const [_NotificationIcon()],
+      ),
       drawer: const AppDrawer(),
 
-      // ✅ MODERN HOME CONTENT (charts, KPIs, insights)
       body: const HomeDashboardView(),
+    );
+  }
+}
+
+class _NotificationIcon extends ConsumerWidget {
+  const _NotificationIcon();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadCountProvider);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationScreen()),
+            );
+          },
+        ),
+
+        /// 🔴 Unread Badge
+        if (unreadCount > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: scheme.error,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                unreadCount > 9 ? '9+' : unreadCount.toString(),
+                style: TextStyle(
+                  color: scheme.onError,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

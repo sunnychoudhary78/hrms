@@ -8,9 +8,11 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade600),
+        Icon(icon, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Text(
           title.toUpperCase(),
@@ -18,11 +20,11 @@ class SectionHeader extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1,
-            color: Colors.grey.shade600,
+            color: scheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+        Expanded(child: Divider(color: scheme.outlineVariant, thickness: 1)),
       ],
     );
   }

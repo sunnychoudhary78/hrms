@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/features/attendance/correction_attendance/presentation/providers/attendance_requests_provider.dart';
 import 'package:lms/features/attendance/correction_attendance/presentation/widgets/section_header.dart';
-import '../widgets/correction_app_bar.dart';
+import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
+import 'package:lms/shared/widgets/app_bar.dart';
 import '../widgets/correction_stats.dart';
 import '../widgets/status_filter_pills.dart';
 import '../widgets/correction_section.dart';
@@ -12,11 +13,13 @@ class AttendanceCorrectionScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
     final stateAsync = ref.watch(attendanceRequestsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: const CorrectionAppBar(),
+      backgroundColor: scheme.surfaceContainerLowest,
+      appBar: AppAppBar(title: "Correct Attendance"),
+      drawer: AppDrawer(),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
@@ -33,17 +36,16 @@ class AttendanceCorrectionScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// 📊 STATS
                   CorrectionStats(requests: state.requests),
 
                   const SizedBox(height: 20),
 
-                  /// 🔎 FILTERS
                   const SectionHeader(
                     title: "Filter by status",
                     icon: Icons.filter_alt_rounded,
                   ),
                   const SizedBox(height: 12),
+
                   StatusFilterPills(
                     selected: state.statusFilter,
                     onChanged: (s) => ref
@@ -53,12 +55,12 @@ class AttendanceCorrectionScreen extends ConsumerWidget {
 
                   const SizedBox(height: 28),
 
-                  /// 🕒 CORRECTIONS
                   const SectionHeader(
                     title: "Attendance corrections",
                     icon: Icons.access_time_rounded,
                   ),
                   const SizedBox(height: 12),
+
                   CorrectionSection(
                     title: "Attendance Corrections",
                     subtitle: "Missed punches & edits",
@@ -68,12 +70,12 @@ class AttendanceCorrectionScreen extends ConsumerWidget {
 
                   const SizedBox(height: 28),
 
-                  /// 🏠 REMOTE
                   const SectionHeader(
                     title: "Remote work requests",
                     icon: Icons.home_work_rounded,
                   ),
                   const SizedBox(height: 12),
+
                   CorrectionSection(
                     title: "Remote Work Requests",
                     subtitle: "WFH & remote approvals",

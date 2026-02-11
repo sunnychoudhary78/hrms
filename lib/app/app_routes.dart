@@ -6,6 +6,7 @@ import 'package:lms/features/leave/presentation/screens/leave_apply_screen.dart'
 import 'package:lms/features/leave/presentation/screens/leave_approve_screen.dart';
 import 'package:lms/features/leave/presentation/screens/leave_balance_screen.dart';
 import 'package:lms/features/profile/presentation/screens/profile_screen.dart';
+import 'package:lms/features/settings/presentation/screens/settings_screen.dart';
 
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
@@ -29,5 +30,6 @@ class AppRoutes {
     '/mark-attendance': (_) => const MarkAttendanceScreen(),
     '/correct-attendance': (_) => const AttendanceCorrectionScreen(),
     '/notifications': (_) => const NotificationScreen(),
+    '/settings': (context) => const ThemeSettingsScreen(),
   };
 }

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lms/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 import 'package:lms/features/profile/presentation/widgets/floating_details_card.dart';
 import 'package:lms/features/profile/presentation/widgets/profile_header.dart';
+import 'package:lms/shared/widgets/app_bar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -51,6 +53,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final state = ref.watch(authProvider);
 
     if (state.isLoading) {
@@ -90,7 +93,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FC),
+      backgroundColor: scheme.surfaceContainerLowest,
+      appBar: const AppAppBar(
+        title: "Profile",
+        showBack: false, // 👈 Root screen → no back button
+      ),
+      drawer: AppDrawer(),
       body: RefreshIndicator(
         onRefresh: _refreshUser,
         child: SingleChildScrollView(
@@ -103,8 +111,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 imageUrl: state.profileUrl,
                 onEditTap: _pickAndUploadImage,
               ),
-
-              /// Floating card overlap
               Transform.translate(
                 offset: const Offset(0, -150),
                 child: ProfileDetailsCard(details: details),

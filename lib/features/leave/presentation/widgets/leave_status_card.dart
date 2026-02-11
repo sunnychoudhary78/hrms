@@ -25,16 +25,17 @@ class LeaveStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final statusColor = _statusColor(leave.status, context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
+        color: scheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: scheme.shadow.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -45,7 +46,6 @@ class LeaveStatusCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// Top row: Leave Type + Status
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -54,6 +54,7 @@ class LeaveStatusCard extends StatelessWidget {
                     leave.leaveType ?? '-',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
                     ),
                   ),
                 ),
@@ -80,13 +81,10 @@ class LeaveStatusCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            /// Date range block
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surfaceVariant.withOpacity(0.4),
+                color: scheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -100,12 +98,11 @@ class LeaveStatusCard extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            /// Reference
             Text(
               'Ref: ${leave.reference}',
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
 
             if (onRevoke != null) ...[
@@ -135,6 +132,8 @@ class _DateItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,14 +142,15 @@ class _DateItem extends StatelessWidget {
             label,
             style: Theme.of(
               context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+            ),
           ),
         ],
       ),

@@ -50,20 +50,20 @@ class _LeaveStatusAppBarState extends State<LeaveStatusAppBar> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return AppBar(
-      backgroundColor: Colors.indigo,
-      iconTheme: const IconThemeData(color: Colors.white),
+      elevation: 0,
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
       title: const Text(
         'Leave Status',
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style: TextStyle(fontWeight: FontWeight.w600),
       ),
 
       actions: [
         IconButton(
-          icon: Icon(
-            _isSearching ? Icons.close : Icons.search,
-            color: Colors.white,
-          ),
+          icon: Icon(_isSearching ? Icons.close : Icons.search),
           onPressed: () {
             if (_isSearching) {
               _clear();
@@ -80,22 +80,24 @@ class _LeaveStatusAppBarState extends State<LeaveStatusAppBar> {
           duration: const Duration(milliseconds: 250),
           height: _isSearching ? 70 : 0,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: Colors.indigo,
+          color: scheme.primary,
           child: _isSearching
               ? Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _controller,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: scheme.onPrimary),
                         decoration: InputDecoration(
                           hintText: 'Search leave type / ref...',
-                          hintStyle: const TextStyle(color: Colors.white70),
+                          hintStyle: TextStyle(
+                            color: scheme.onPrimary.withOpacity(.7),
+                          ),
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: .15),
-                          prefixIcon: const Icon(
+                          fillColor: scheme.onPrimary.withOpacity(.15),
+                          prefixIcon: Icon(
                             Icons.search,
-                            color: Colors.white,
+                            color: scheme.onPrimary,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -109,10 +111,7 @@ class _LeaveStatusAppBarState extends State<LeaveStatusAppBar> {
                     const SizedBox(width: 8),
 
                     IconButton(
-                      icon: const Icon(
-                        Icons.calendar_today,
-                        color: Colors.white,
-                      ),
+                      icon: const Icon(Icons.calendar_today),
                       onPressed: _pickDate,
                     ),
                   ],

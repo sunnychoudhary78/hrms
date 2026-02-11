@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lms/core/providers/global_loading_provider.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/providers/attendance_selectors.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/providers/mark_attendance_provider.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/providers/company_settings_provider.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/widgets/attendance_status_tile.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/widgets/mark_attendance_header.dart';
+import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
+import 'package:lms/shared/widgets/app_bar.dart';
 import '../widgets/live_clock_card.dart';
 import '../widgets/session_logs.dart';
 import '../widgets/modern_punch_button.dart';
@@ -25,26 +28,50 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
   String? remoteReason;
 
   @override
+  void initState() {
+    super.initState();
+
+    /// 🔥 Global loader listener
+    ref.listen<AsyncValue<List<dynamic>>>(markAttendanceProvider, (
+      previous,
+      next,
+    ) {
+      final loader = ref.read(globalLoadingProvider.notifier);
+
+      if (next.isLoading) {
+        loader.show();
+      } else {
+        loader.hide();
+      }
+
+      if (next.hasError) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.error.toString())));
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     final attendanceAsync = ref.watch(markAttendanceProvider);
     final settingsAsync = ref.watch(companySettingsProvider);
 
     final dayName = DateFormat('EEEE').format(now);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-
+      appBar: AppAppBar(title: "Mark Attendance"),
+      drawer: AppDrawer(),
+      backgroundColor: scheme.surfaceContainerLowest,
       body: attendanceAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-
-        error: (e, _) => Center(child: Text(e.toString())),
-
+        loading: () => const SizedBox(), // no local loader
+        error: (_, __) => const SizedBox(),
         data: (attendanceState) {
           return settingsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-
-            error: (e, _) => Center(child: Text(e.toString())),
-
+            loading: () => const SizedBox(),
+            error: (_, __) => const SizedBox(),
             data: (settings) {
               final sessions = attendanceState;
 
@@ -54,6 +81,7 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
 
               final punchInTime = activeSession?.checkInTime;
               final punchOutTime = activeSession?.checkOutTime;
+
               final workingTime = punchInTime == null
                   ? "00:00"
                   : _duration(punchInTime);
@@ -68,7 +96,6 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
                 child: Column(
                   children: [
                     MarkAttendanceHeader(dayName: dayName),
-
                     const SizedBox(height: 24),
 
                     LiveClockCard(
@@ -87,7 +114,7 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
 
                     const SizedBox(height: 32),
 
-                    // ───── MAIN BUTTONS ─────
+                    /// MAIN BUTTONS
                     Row(
                       children: [
                         Expanded(
@@ -112,56 +139,51 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
                                     }
                                   }
                                 : null,
-                            colors: const [
-                              Color(0xFF6366F1),
-                              Color(0xFF818CF8),
-                            ],
+                            colors: [scheme.primary, scheme.primaryContainer],
                           ),
                         ),
-
                         const SizedBox(width: 16),
-
                         Expanded(
                           child: ModernPunchButton(
                             text: "Punch Out",
                             icon: Icons.power_settings_new_rounded,
                             onPressed: punchInTime != null
-                                ? () => ref
-                                      .read(markAttendanceProvider.notifier)
-                                      .punchOut()
+                                ? () async {
+                                    await ref
+                                        .read(markAttendanceProvider.notifier)
+                                        .punchOut();
+                                  }
                                 : null,
-                            colors: const [
-                              Color(0xFF1E293B),
-                              Color(0xFF334155),
+                            colors: [
+                              scheme.secondary,
+                              scheme.secondaryContainer,
                             ],
                           ),
                         ),
                       ],
                     ),
 
-                    // ───── REMOTE BUTTON ─────
                     if (!isRemoteMode && punchInTime == null)
                       Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: TextButton.icon(
                           onPressed: _openRemoteReasonDialog,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.wifi_tethering_rounded,
                             size: 18,
-                            color: Color(0xFF6366F1),
+                            color: scheme.primary,
                           ),
-                          label: const Text(
+                          label: Text(
                             "Work remotely (emergency)",
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF6366F1),
+                              color: scheme.primary,
                             ),
                           ),
                         ),
                       ),
 
-                    // ───── REMOTE MODE BADGE ─────
                     if (isRemoteMode)
                       Padding(
                         padding: const EdgeInsets.only(top: 12),
@@ -171,16 +193,16 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
+                            color: scheme.tertiaryContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.info_outline,
                                 size: 16,
-                                color: Colors.orange,
+                                color: scheme.tertiary,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -188,7 +210,7 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.orange.shade700,
+                                  color: scheme.onTertiaryContainer,
                                 ),
                               ),
                             ],
@@ -197,7 +219,6 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
                       ),
 
                     const SizedBox(height: 24),
-
                     SessionLogs(sessions: sessions),
                   ],
                 ),
@@ -209,9 +230,8 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
     );
   }
 
-  // ───────────────── REMOTE BOTTOM SHEET ─────────────────
-
   Future<void> _openRemoteReasonDialog() async {
+    final scheme = Theme.of(context).colorScheme;
     final TextEditingController reasonCtrl = TextEditingController();
 
     await showModalBottomSheet(
@@ -226,53 +246,47 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
             top: 24,
             bottom: MediaQuery.of(context).viewInsets.bottom + 20,
           ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Remote Work (Emergency)",
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E293B),
+                  color: scheme.onSurface,
                 ),
               ),
-
               const SizedBox(height: 6),
-
               Text(
                 "Please explain your emergency. This will be logged.",
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
               ),
-
               const SizedBox(height: 20),
-
               TextField(
                 controller: reasonCtrl,
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: "Describe the situation…",
                   filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
+                  fillColor: scheme.surfaceContainerLow,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
+                    backgroundColor: scheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -288,11 +302,11 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
 
                     Navigator.pop(context);
                   },
-                  child: const Text(
+                  child: Text(
                     "Enable Remote Punch In",
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: scheme.onPrimary,
                     ),
                   ),
                 ),
@@ -303,8 +317,6 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
       },
     );
   }
-
-  // ───────────────── HELPERS ─────────────────
 
   String _duration(DateTime start) {
     final diff = DateTime.now().difference(start);
@@ -343,11 +355,9 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
     if (now.isBefore(punchInTime)) return 0.0;
 
     final total = end.difference(punchInTime).inSeconds;
-
     if (total <= 0) return 1.0;
 
     final worked = now.difference(punchInTime).inSeconds;
-
     return (worked / total).clamp(0.0, 1.0);
   }
 }

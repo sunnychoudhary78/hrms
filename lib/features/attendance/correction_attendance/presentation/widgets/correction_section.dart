@@ -24,11 +24,11 @@ class CorrectionSection extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),

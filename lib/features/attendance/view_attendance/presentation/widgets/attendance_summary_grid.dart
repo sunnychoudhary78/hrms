@@ -6,17 +6,19 @@ class AttendanceSummaryGrid extends StatelessWidget {
 
   const AttendanceSummaryGrid({super.key, required this.summary});
 
-  Widget _tile(String t, String v, Color c) {
+  Widget _tile(BuildContext context, String t, String v, Color c) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: .1),
+        color: c.withOpacity(.12),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t),
+          Text(t, style: TextStyle(color: scheme.onSurfaceVariant)),
           const SizedBox(height: 6),
           Text(
             v,
@@ -33,6 +35,8 @@ class AttendanceSummaryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -40,11 +44,21 @@ class AttendanceSummaryGrid extends StatelessWidget {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       children: [
-        _tile("Working Days", "${summary.workingDays}", Colors.green),
-        _tile("Late Days", "${summary.lateDays}", Colors.orange),
-        _tile("Leaves", "${summary.totalLeaves}", Colors.blue),
-        _tile("Absent", "${summary.absentDays}", Colors.red),
-        _tile("Payable", "${summary.payableDays}", Colors.teal),
+        _tile(
+          context,
+          "Working Days",
+          "${summary.workingDays}",
+          scheme.primary,
+        ),
+        _tile(context, "Late Days", "${summary.lateDays}", scheme.tertiary),
+        _tile(context, "Leaves", "${summary.totalLeaves}", scheme.secondary),
+        _tile(context, "Absent", "${summary.absentDays}", scheme.error),
+        _tile(
+          context,
+          "Payable",
+          "${summary.payableDays}",
+          scheme.primaryContainer,
+        ),
       ],
     );
   }

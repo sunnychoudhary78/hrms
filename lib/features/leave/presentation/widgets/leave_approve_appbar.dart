@@ -52,21 +52,20 @@ class _LeaveApproveAppBarState extends State<LeaveApproveAppBar> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return AppBar(
-      backgroundColor: const Color(0xFF0056B3),
-      iconTheme: const IconThemeData(color: Colors.white),
+      elevation: 0,
+      backgroundColor: scheme.primary,
+      foregroundColor: scheme.onPrimary,
       title: const Text(
-        "Manager - Leave Requests",
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        "Leave Requests",
+        style: TextStyle(fontWeight: FontWeight.w600),
       ),
-      centerTitle: true,
 
       actions: [
         IconButton(
-          icon: Icon(
-            _isSearching ? Icons.close : Icons.search,
-            color: Colors.white,
-          ),
+          icon: Icon(_isSearching ? Icons.close : Icons.search),
           onPressed: () {
             if (_isSearching) {
               _clear();
@@ -83,22 +82,24 @@ class _LeaveApproveAppBarState extends State<LeaveApproveAppBar> {
           duration: const Duration(milliseconds: 250),
           height: _isSearching ? 72 : 0,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: const Color(0xFF0056B3),
+          color: scheme.primary,
           child: _isSearching
               ? Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _controller,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: scheme.onPrimary),
                         decoration: InputDecoration(
                           hintText: 'Search name / code / leave type...',
-                          hintStyle: const TextStyle(color: Colors.white70),
+                          hintStyle: TextStyle(
+                            color: scheme.onPrimary.withOpacity(.7),
+                          ),
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: .15),
-                          prefixIcon: const Icon(
+                          fillColor: scheme.onPrimary.withOpacity(.15),
+                          prefixIcon: Icon(
                             Icons.search,
-                            color: Colors.white,
+                            color: scheme.onPrimary,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -110,10 +111,7 @@ class _LeaveApproveAppBarState extends State<LeaveApproveAppBar> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(
-                        Icons.calendar_today,
-                        color: Colors.white,
-                      ),
+                      icon: const Icon(Icons.calendar_today),
                       onPressed: _pickDate,
                     ),
                   ],

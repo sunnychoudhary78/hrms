@@ -14,6 +14,8 @@ class StatusFilterPills extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -30,13 +32,15 @@ class StatusFilterPills extends StatelessWidget {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: active ? Colors.indigo : Colors.grey.shade100,
+                  color: active
+                      ? scheme.primary
+                      : scheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Text(
                   s,
                   style: TextStyle(
-                    color: active ? Colors.white : Colors.grey.shade700,
+                    color: active ? scheme.onPrimary : scheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

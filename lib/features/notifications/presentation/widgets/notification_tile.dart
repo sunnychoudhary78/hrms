@@ -20,10 +20,10 @@ class NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
     return Material(
-      color: isUnread ? Colors.white : const Color(0xFFF5F6F8),
+      color: isUnread ? scheme.surface : scheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(16),
       elevation: 2,
       child: InkWell(
@@ -38,14 +38,8 @@ class NotificationTile extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: theme.colorScheme.primary.withOpacity(
-                      0.12,
-                    ),
-                    child: Icon(
-                      icon,
-                      color: theme.colorScheme.primary,
-                      size: 22,
-                    ),
+                    backgroundColor: scheme.primary.withOpacity(0.12),
+                    child: Icon(icon, color: scheme.primary, size: 22),
                   ),
                   if (isUnread)
                     Positioned(
@@ -55,7 +49,7 @@ class NotificationTile extends StatelessWidget {
                         width: 10,
                         height: 10,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
+                          color: scheme.primary,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -69,9 +63,10 @@ class NotificationTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: scheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -79,25 +74,25 @@ class NotificationTile extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.black54,
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time,
                           size: 14,
-                          color: Colors.grey,
+                          color: scheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           time,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ],

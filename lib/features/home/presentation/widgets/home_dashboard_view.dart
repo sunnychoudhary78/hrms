@@ -37,6 +37,7 @@ class HomeDashboardView extends ConsumerWidget {
               const SizedBox(height: 16),
 
               AttendanceOverviewCard(dashboard: dashboard),
+              SizedBox(height: 100),
             ],
           ),
         );

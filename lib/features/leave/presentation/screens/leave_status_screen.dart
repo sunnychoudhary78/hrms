@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 import '../providers/leave_status_provider.dart';
 import '../widgets/leave_status_appbar.dart';
 import '../widgets/leave_status_list.dart';
-import '../../../home/presentation/widgets/app_drawer.dart';
 
 class LeaveStatusScreen extends ConsumerStatefulWidget {
   const LeaveStatusScreen({super.key});
@@ -18,10 +18,11 @@ class _LeaveStatusScreenState extends ConsumerState<LeaveStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final leaveAsync = ref.watch(leaveStatusProvider);
 
     return Scaffold(
-      drawer: const AppDrawer(),
+      backgroundColor: scheme.surfaceContainerLowest,
 
       appBar: LeaveStatusAppBar(
         onSearch: (v) => setState(() => query = v),
@@ -31,6 +32,7 @@ class _LeaveStatusScreenState extends ConsumerState<LeaveStatusScreen> {
           selectedDate = null;
         }),
       ),
+      drawer: AppDrawer(),
 
       body: leaveAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 import '../providers/leave_approve_provider.dart';
 import '../widgets/leave_approve_appbar.dart';
 import '../widgets/leave_approve_list.dart';
-import '../../../home/presentation/widgets/app_drawer.dart';
 
 class LeaveApproveScreen extends ConsumerStatefulWidget {
   const LeaveApproveScreen({super.key});
@@ -19,10 +18,11 @@ class _LeaveApproveScreenState extends ConsumerState<LeaveApproveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final async = ref.watch(leaveApproveProvider);
 
     return Scaffold(
-      drawer: const AppDrawer(),
+      backgroundColor: scheme.surfaceContainerLowest,
 
       appBar: LeaveApproveAppBar(
         onSearch: (v) => setState(() => query = v),
@@ -32,6 +32,7 @@ class _LeaveApproveScreenState extends ConsumerState<LeaveApproveScreen> {
           selectedDate = null;
         }),
       ),
+      drawer: AppDrawer(),
 
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),

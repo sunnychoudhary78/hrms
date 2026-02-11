@@ -13,8 +13,7 @@ class AttendanceStatusTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = const Color(0xFF10B981); // emerald
-    final warningColor = const Color(0xFFF59E0B); // amber
+    final scheme = Theme.of(context).colorScheme;
 
     return Row(
       children: [
@@ -22,18 +21,16 @@ class AttendanceStatusTiles extends StatelessWidget {
           child: _StatusTile(
             label: "Check In",
             time: punchInTime,
-            color: accentColor,
+            color: scheme.primary,
             icon: Icons.login_rounded,
           ),
         ),
-
         const SizedBox(width: 16),
-
         Expanded(
           child: _StatusTile(
             label: "Check Out",
             time: punchOutTime,
-            color: warningColor,
+            color: scheme.tertiary,
             icon: Icons.logout_rounded,
           ),
         ),
@@ -41,8 +38,6 @@ class AttendanceStatusTiles extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────
 
 class _StatusTile extends StatelessWidget {
   final String label;
@@ -59,6 +54,8 @@ class _StatusTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     final formattedTime = time != null
         ? DateFormat('hh:mm a').format(time!)
         : "--:--";
@@ -66,26 +63,23 @@ class _StatusTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: color.withOpacity(.06),
+        color: color.withOpacity(.08),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(.12)),
+        border: Border.all(color: color.withOpacity(.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color, size: 20),
-
           const SizedBox(height: 8),
-
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.grey,
+              color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
-
           Text(
             formattedTime,
             style: TextStyle(

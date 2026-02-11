@@ -7,26 +7,33 @@ class ProfileDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
         elevation: 10,
+        color: scheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Column(
             children: details.map((d) {
               return ListTile(
-                leading: Icon(d.$3, color: const Color(0xFF1565C0)),
+                leading: Icon(d.$3, color: scheme.primary),
                 title: Text(
                   d.$1,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
                 subtitle: Text(
                   d.$2,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
                   ),
                 ),
               );
