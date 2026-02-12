@@ -25,12 +25,14 @@ class AttendanceSession {
   factory AttendanceSession.fromJson(Map<String, dynamic> json) {
     return AttendanceSession(
       id: json['id']?.toString() ?? '',
-      checkInTime: DateTime.parse(json['checkInTime']),
+
+      // 🔥 FIXED (convert to local time)
+      checkInTime: DateTime.parse(json['checkInTime']).toLocal(),
+
       checkOutTime: json['checkOutTime'] != null
-          ? DateTime.parse(json['checkOutTime'])
+          ? DateTime.parse(json['checkOutTime']).toLocal()
           : null,
 
-      // ✅ ADDED
       date: json['date'],
       durationMinutes: json['durationMinutes'],
 

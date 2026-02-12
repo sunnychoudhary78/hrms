@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/core/network/api_constants.dart';
+import 'package:lms/core/providers/app_restart_provider.dart';
 import 'package:lms/core/providers/network_providers.dart';
 
 import '../../../../core/storage/token_storage.dart';
@@ -122,13 +123,15 @@ class AuthNotifier extends Notifier<AuthState> {
     if (fcmToken != null && fcmToken.isNotEmpty) {
       try {
         await _authApi.unregisterFcmToken(fcmToken: fcmToken);
-      } catch (_) {
-        // ignore backend failure on logout
-      }
+      } catch (_) {}
     }
 
     await _tokenStorage.clear();
+
     state = const AuthState();
+
+    // 🔥 VERY IMPORTANT — RESET ENTIRE APP STATE
+    ref.read(appRestartProvider.notifier).restart();
   }
 
   // ─────────────────────────────────────────────

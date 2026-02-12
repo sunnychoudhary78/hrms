@@ -5,8 +5,6 @@ class AttendanceSummary {
   final int absentDays;
   final int payableDays;
   final int totalMinutes;
-
-  /// 🔔 NEW (hours, not minutes)
   final int expectedWorkingHours;
 
   AttendanceSummary({
@@ -18,6 +16,13 @@ class AttendanceSummary {
     required this.totalMinutes,
     required this.expectedWorkingHours,
   });
+
+  /// 🔥 Convert minutes → HH:mm
+  String get totalWorkingHoursFormatted {
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}";
+  }
 
   factory AttendanceSummary.fromJson(Map<String, dynamic> json) {
     int asInt(dynamic v) {

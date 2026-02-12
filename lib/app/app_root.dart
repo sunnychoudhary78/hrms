@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lms/core/providers/global_loading_provider.dart';
-import 'package:lms/shared/widgets/global_loader.dart';
 
 import '../core/notifications/notification_action.dart';
 import '../core/notifications/notification_router.dart';
@@ -32,7 +30,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
       ref.read(authProvider.notifier).tryAutoLogin();
     });
 
-    // 🔔 Notification action listener (navigation only)
+    // 🔔 Notification action listener
     _notificationSub = ref.listenManual<NotificationAction?>(
       notificationActionProvider,
       (previous, next) {
@@ -53,33 +51,24 @@ class _AppRootState extends ConsumerState<AppRoot> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final isGlobalLoading = ref.watch(globalLoadingProvider);
-
-    Widget content;
 
     // ⏳ Auth Loading
     if (authState.isLoading) {
-      content = const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-    // ❌ Not logged in
-    else if (authState.profile == null) {
-      content = const LoginScreen();
-    }
-    // ✅ Logged in
-    else {
-      _initPushIfNeeded();
-      content = const HomeScreen();
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Stack(
-      children: [content, if (isGlobalLoading) const GlobalLoader()],
-    );
+    // ❌ Not logged in
+    if (authState.profile == null) {
+      return const LoginScreen();
+    }
+
+    // ✅ Logged in
+    _initPushIfNeeded();
+    return const HomeScreen();
   }
 
   // ─────────────────────────────────────────────
-  // 🔔 PUSH INIT (SINGLE SOURCE OF TRUTH)
+  // 🔔 PUSH INIT
   // ─────────────────────────────────────────────
   void _initPushIfNeeded() {
     if (_pushInitialized) return;
@@ -96,8 +85,6 @@ class _AppRootState extends ConsumerState<AppRoot> {
 
         ref.read(notificationActionProvider.notifier).emit(action);
       },
-
-      // 🔔 SAFETY NET: token generated AFTER login
       onTokenAvailable: (token) {
         final authState = ref.read(authProvider);
 

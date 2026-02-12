@@ -13,9 +13,6 @@ class LeaveApproveScreen extends ConsumerStatefulWidget {
 }
 
 class _LeaveApproveScreenState extends ConsumerState<LeaveApproveScreen> {
-  String query = '';
-  DateTime? selectedDate;
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -23,24 +20,14 @@ class _LeaveApproveScreenState extends ConsumerState<LeaveApproveScreen> {
 
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,
-
-      appBar: LeaveApproveAppBar(
-        onSearch: (v) => setState(() => query = v),
-        onPickDate: (d) => setState(() => selectedDate = d),
-        onClear: () => setState(() {
-          query = '';
-          selectedDate = null;
-        }),
-      ),
-      drawer: AppDrawer(),
+      drawer: const AppDrawer(),
+      appBar: const LeaveApproveAppBar(),
 
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (requests) => LeaveApproveList(
           requests: requests,
-          search: query,
-          selectedDate: selectedDate,
           onRefresh: () => ref.read(leaveApproveProvider.notifier).refresh(),
           onApprove: (id, comment, dates) => ref
               .read(leaveApproveProvider.notifier)

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lms/core/providers/global_loading_provider.dart';
 import 'package:lms/core/providers/location_providers.dart';
 import 'package:lms/core/services/location_service.dart';
 import 'package:lms/features/attendance/shared/data/attendance_rerpository.dart';
@@ -48,27 +49,64 @@ class MarkAttendanceNotifier extends AsyncNotifier<List<AttendanceSession>> {
   }
 
   Future<void> punchIn() async {
-    final location = await _getUserLocation();
-    await _repo.punchIn({"source": "mobile", "location": location});
-    await refresh();
+    final loader = ref.read(globalLoadingProvider.notifier);
+
+    try {
+      loader.show("Checking location permission…");
+
+      final ready = await _locationService.ensureServiceAndPermission();
+      if (!ready) {
+        throw Exception("Location not available");
+      }
+
+      loader.update("Fetching current location…");
+      final pos = await _locationService.getCurrentLocation();
+      if (pos == null) {
+        throw Exception("Unable to fetch location");
+      }
+
+      loader.update("Marking attendance…");
+      await _repo.punchIn({
+        "source": "mobile",
+        "location": {"lat": pos.latitude, "lng": pos.longitude},
+      });
+
+      loader.update("Refreshing sessions…");
+      await refresh();
+    } finally {
+      loader.hide();
+    }
   }
 
   Future<void> punchOut() async {
-    final sessions = state.value ?? [];
+    final loader = ref.read(globalLoadingProvider.notifier);
 
-    final active = sessions.firstWhere(
-      (s) => s.checkOutTime == null,
-      orElse: () => throw Exception("No active session"),
-    );
+    try {
+      loader.show("Preparing punch out…");
 
-    if (active.source == 'remote') {
-      await _repo.punchOut({});
-    } else {
-      final location = await _getUserLocation();
-      await _repo.punchOut({"location": location});
+      final sessions = state.value ?? [];
+
+      final active = sessions.firstWhere(
+        (s) => s.checkOutTime == null,
+        orElse: () => throw Exception("No active session"),
+      );
+
+      if (active.source == 'remote') {
+        loader.update("Marking remote punch out…");
+        await _repo.punchOut({});
+      } else {
+        loader.update("Fetching location…");
+        final location = await _getUserLocation();
+
+        loader.update("Marking attendance…");
+        await _repo.punchOut({"location": location});
+      }
+
+      loader.update("Refreshing sessions…");
+      await refresh();
+    } finally {
+      loader.hide();
     }
-
-    await refresh();
   }
 
   Future<void> punchInRemote(String reason) async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lms/features/attendance/view_attendance/data/models/attendance_aggregate_model.dart';
+import 'package:lms/features/attendance/view_attendance/utils/attendance_status_color.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class AttendanceCalendar extends StatelessWidget {
@@ -28,47 +29,52 @@ class AttendanceCalendar extends StatelessWidget {
     );
   }
 
-  Color _color(BuildContext context, DateTime d) {
-    final scheme = Theme.of(context).colorScheme;
-    final status = _forDay(d).status.toLowerCase();
-
-    switch (status) {
-      case 'present':
-        return scheme.primary;
-      case 'late':
-      case 'half-day':
-        return scheme.tertiary;
-      case 'leave':
-        return scheme.secondary;
-      case 'holiday':
-        return scheme.primaryContainer;
-      default:
-        return scheme.errorContainer;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: TableCalendar(
-        focusedDay: focusedDay,
-        firstDay: DateTime.utc(2023, 1, 1),
-        lastDay: DateTime.utc(2026, 12, 31),
-        onPageChanged: onMonthChange,
-        selectedDayPredicate: (d) => isSameDay(d, selectedDay),
-        onDaySelected: (selected, _) => onDaySelected(selected),
-        headerStyle: const HeaderStyle(
-          titleCentered: true,
-          formatButtonVisible: false,
-        ),
-        calendarStyle: const CalendarStyle(outsideDaysVisible: false),
-        calendarBuilders: CalendarBuilders(
-          defaultBuilder: (_, d, __) => _cell(context, d, _color(context, d)),
-          todayBuilder: (_, d, __) =>
-              _cell(context, d, _color(context, d), isToday: true),
-          selectedBuilder: (_, d, __) =>
-              _cell(context, d, _color(context, d), isSelected: true),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: TableCalendar(
+          focusedDay: focusedDay,
+          firstDay: DateTime.utc(2023, 1, 1),
+          lastDay: DateTime.utc(2026, 12, 31),
+          onPageChanged: onMonthChange,
+          selectedDayPredicate: (d) => isSameDay(d, selectedDay),
+          onDaySelected: (selected, _) => onDaySelected(selected),
+          headerStyle: HeaderStyle(
+            titleCentered: true,
+            formatButtonVisible: false,
+            titleTextStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: scheme.onSurface,
+            ),
+          ),
+          calendarStyle: const CalendarStyle(outsideDaysVisible: false),
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (_, d, __) {
+              final status = _forDay(d).status;
+              final color = AttendanceStatusColor.fromStatus(context, status);
+
+              return _cell(context, d, color);
+            },
+            todayBuilder: (_, d, __) {
+              final status = _forDay(d).status;
+              final color = AttendanceStatusColor.fromStatus(context, status);
+
+              return _cell(context, d, color, isToday: true);
+            },
+            selectedBuilder: (_, d, __) {
+              final status = _forDay(d).status;
+              final color = AttendanceStatusColor.fromStatus(context, status);
+
+              return _cell(context, d, color, isSelected: true);
+            },
+          ),
         ),
       ),
     );
@@ -77,7 +83,7 @@ class AttendanceCalendar extends StatelessWidget {
   Widget _cell(
     BuildContext context,
     DateTime d,
-    Color c, {
+    Color color, {
     bool isToday = false,
     bool isSelected = false,
   }) {
@@ -88,12 +94,12 @@ class AttendanceCalendar extends StatelessWidget {
       margin: const EdgeInsets.all(4),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: c.withOpacity(.15),
+        color: color.withOpacity(.15),
         borderRadius: BorderRadius.circular(12),
-        border: isToday
+        border: isSelected
+            ? Border.all(color: scheme.primary, width: 2)
+            : isToday
             ? Border.all(color: scheme.primary, width: 1.5)
-            : isSelected
-            ? Border.all(color: scheme.primary, width: 1.8)
             : null,
       ),
       child: Text(

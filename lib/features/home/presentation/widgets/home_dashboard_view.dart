@@ -29,7 +29,6 @@ class HomeDashboardView extends ConsumerWidget {
                 name: dashboard.userName,
                 role: dashboard.designation,
                 imageUrl: dashboard.profileImageUrl, // optional
-                status: dashboard.todayStatus,
               ),
 
               const SizedBox(height: 16),

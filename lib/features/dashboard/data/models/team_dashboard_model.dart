@@ -30,6 +30,7 @@ class TeamEmployee {
   final String email;
   final String contact;
   final String employeeId;
+  final String userId;
   final bool isPresent;
   final String managerName;
 
@@ -38,6 +39,7 @@ class TeamEmployee {
     required this.email,
     required this.contact,
     required this.employeeId,
+    required this.userId,
     required this.isPresent,
     required this.managerName,
   });
@@ -48,6 +50,7 @@ class TeamEmployee {
       email: json['email'] ?? '',
       contact: json['contact'] ?? '',
       employeeId: json['employee_id'] ?? '',
+      userId: json['user_id'] ?? '',
       isPresent: json['is_present'] ?? false,
       managerName: json['manager_name'] ?? '',
     );

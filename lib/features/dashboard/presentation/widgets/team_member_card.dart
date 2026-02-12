@@ -13,73 +13,106 @@ class TeamMemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: Colors.indigo.shade50,
-              child: Text(
-                employee.name[0],
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: scheme.shadow.withOpacity(0.05),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              /// Avatar
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: scheme.primaryContainer,
+                child: Text(
+                  employee.name.isNotEmpty
+                      ? employee.name[0].toUpperCase()
+                      : "?",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onPrimaryContainer,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    employee.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    employee.employeeId,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+
+              const SizedBox(width: 18),
+
+              /// Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      employee.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      employee.employeeId,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            statusBadge(employee.isPresent),
-          ],
+
+              statusBadge(employee.isPresent),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  /// 🔥 Premium Status Badge
   static Widget statusBadge(bool present) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: present ? Colors.green.shade50 : Colors.red.shade50,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Text(
-        present ? "Present" : "Absent",
-        style: TextStyle(
-          color: present ? Colors.green : Colors.red,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+    return Builder(
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+
+        final bg = present ? scheme.tertiaryContainer : scheme.errorContainer;
+
+        final textColor = present
+            ? scheme.onTertiaryContainer
+            : scheme.onErrorContainer;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text(
+            present ? "Present" : "Absent",
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -28,31 +28,6 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
   String? remoteReason;
 
   @override
-  void initState() {
-    super.initState();
-
-    /// 🔥 Global loader listener
-    ref.listen<AsyncValue<List<dynamic>>>(markAttendanceProvider, (
-      previous,
-      next,
-    ) {
-      final loader = ref.read(globalLoadingProvider.notifier);
-
-      if (next.isLoading) {
-        loader.show();
-      } else {
-        loader.hide();
-      }
-
-      if (next.hasError) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.error.toString())));
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
@@ -62,11 +37,11 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
     final dayName = DateFormat('EEEE').format(now);
 
     return Scaffold(
-      appBar: AppAppBar(title: "Mark Attendance"),
+      appBar: AppAppBar(title: "Mark Attendance", showBack: false),
       drawer: AppDrawer(),
       backgroundColor: scheme.surfaceContainerLowest,
       body: attendanceAsync.when(
-        loading: () => const SizedBox(), // no local loader
+        loading: () => const SizedBox(),
         error: (_, __) => const SizedBox(),
         data: (attendanceState) {
           return settingsAsync.when(
@@ -118,46 +93,90 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: ModernPunchButton(
-                            text: "Punch In",
-                            icon: Icons.fingerprint,
-                            onPressed: punchInTime == null
-                                ? () async {
-                                    if (isRemoteMode) {
-                                      await ref
-                                          .read(markAttendanceProvider.notifier)
-                                          .punchInRemote(remoteReason!);
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ModernPunchButton(
+                              text: "Punch In",
+                              icon: Icons.fingerprint,
+                              onPressed: punchInTime == null
+                                  ? () async {
+                                      final loader = ref.read(
+                                        globalLoadingProvider.notifier,
+                                      );
 
-                                      setState(() {
-                                        isRemoteMode = false;
-                                        remoteReason = null;
-                                      });
-                                    } else {
-                                      await ref
-                                          .read(markAttendanceProvider.notifier)
-                                          .punchIn();
+                                      try {
+                                        loader.show(); // 🔥 instant loader
+
+                                        if (isRemoteMode) {
+                                          await ref
+                                              .read(
+                                                markAttendanceProvider.notifier,
+                                              )
+                                              .punchInRemote(remoteReason!);
+
+                                          setState(() {
+                                            isRemoteMode = false;
+                                            remoteReason = null;
+                                          });
+                                        } else {
+                                          await ref
+                                              .read(
+                                                markAttendanceProvider.notifier,
+                                              )
+                                              .punchIn();
+                                        }
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text(e.toString())),
+                                        );
+                                      } finally {
+                                        loader.hide(); // 🔥 always hide
+                                      }
                                     }
-                                  }
-                                : null,
-                            colors: [scheme.primary, scheme.primaryContainer],
+                                  : null,
+                              colors: [scheme.primary, scheme.primaryContainer],
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: ModernPunchButton(
-                            text: "Punch Out",
-                            icon: Icons.power_settings_new_rounded,
-                            onPressed: punchInTime != null
-                                ? () async {
-                                    await ref
-                                        .read(markAttendanceProvider.notifier)
-                                        .punchOut();
-                                  }
-                                : null,
-                            colors: [
-                              scheme.secondary,
-                              scheme.secondaryContainer,
-                            ],
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ModernPunchButton(
+                              text: "Punch Out",
+                              icon: Icons.power_settings_new_rounded,
+                              onPressed: punchInTime != null
+                                  ? () async {
+                                      final loader = ref.read(
+                                        globalLoadingProvider.notifier,
+                                      );
+
+                                      try {
+                                        loader.show();
+
+                                        await ref
+                                            .read(
+                                              markAttendanceProvider.notifier,
+                                            )
+                                            .punchOut();
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text(e.toString())),
+                                        );
+                                      } finally {
+                                        loader.hide();
+                                      }
+                                    }
+                                  : null,
+                              colors: [
+                                scheme.secondary,
+                                scheme.secondaryContainer,
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -254,18 +273,9 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 "Remote Work (Emergency)",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Please explain your emergency. This will be logged.",
-                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 20),
               TextField(
@@ -274,7 +284,6 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
                 decoration: InputDecoration(
                   hintText: "Describe the situation…",
                   filled: true,
-                  fillColor: scheme.surfaceContainerLow,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -285,13 +294,6 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: scheme.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
                   onPressed: () {
                     if (reasonCtrl.text.trim().isEmpty) return;
 
@@ -302,13 +304,7 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
 
                     Navigator.pop(context);
                   },
-                  child: Text(
-                    "Enable Remote Punch In",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: scheme.onPrimary,
-                    ),
-                  ),
+                  child: const Text("Enable Remote Punch In"),
                 ),
               ),
             ],
@@ -327,13 +323,11 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
 
   TimeOfDay? _parseTime(String? value) {
     if (value == null || value.isEmpty) return null;
-
     final parts = value.split(':');
     if (parts.length < 2) return null;
 
     final hour = int.tryParse(parts[0]);
     final minute = int.tryParse(parts[1]);
-
     if (hour == null || minute == null) return null;
 
     return TimeOfDay(hour: hour, minute: minute);
@@ -343,7 +337,6 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
     if (punchInTime == null || officeEnd == null) return 0.0;
 
     final now = DateTime.now();
-
     final end = DateTime(
       now.year,
       now.month,
@@ -358,6 +351,7 @@ class _MarkAttendanceScreenState extends ConsumerState<MarkAttendanceScreen> {
     if (total <= 0) return 1.0;
 
     final worked = now.difference(punchInTime).inSeconds;
+
     return (worked / total).clamp(0.0, 1.0);
   }
 }

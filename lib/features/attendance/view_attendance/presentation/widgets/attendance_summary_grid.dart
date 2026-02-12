@@ -1,31 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:lms/features/attendance/view_attendance/data/models/attendance_summary_model.dart';
+import 'package:lms/features/attendance/view_attendance/utils/attendance_status_color.dart';
 
 class AttendanceSummaryGrid extends StatelessWidget {
   final AttendanceSummary summary;
 
   const AttendanceSummaryGrid({super.key, required this.summary});
 
-  Widget _tile(BuildContext context, String t, String v, Color c) {
+  Widget _tile(BuildContext context, String title, String value, Color color) {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: c.withOpacity(.12),
-        borderRadius: BorderRadius.circular(14),
+        color: color.withOpacity(.12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t, style: TextStyle(color: scheme.onSurfaceVariant)),
-          const SizedBox(height: 6),
           Text(
-            v,
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: c,
+              color: color,
             ),
           ),
         ],
@@ -33,10 +41,14 @@ class AttendanceSummaryGrid extends StatelessWidget {
     );
   }
 
+  String _formatMinutes(int minutes) {
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    return "${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')}";
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -48,16 +60,43 @@ class AttendanceSummaryGrid extends StatelessWidget {
           context,
           "Working Days",
           "${summary.workingDays}",
-          scheme.primary,
+          AttendanceStatusColor.fromStatus(context, "present"),
         ),
-        _tile(context, "Late Days", "${summary.lateDays}", scheme.tertiary),
-        _tile(context, "Leaves", "${summary.totalLeaves}", scheme.secondary),
-        _tile(context, "Absent", "${summary.absentDays}", scheme.error),
         _tile(
           context,
-          "Payable",
+          "Late Days",
+          "${summary.lateDays}",
+          AttendanceStatusColor.fromStatus(context, "late"),
+        ),
+        _tile(
+          context,
+          "Leaves",
+          "${summary.totalLeaves}",
+          AttendanceStatusColor.fromStatus(context, "leave"),
+        ),
+        _tile(
+          context,
+          "Absent",
+          "${summary.absentDays}",
+          AttendanceStatusColor.fromStatus(context, "absent"),
+        ),
+        _tile(
+          context,
+          "Payable Days",
           "${summary.payableDays}",
-          scheme.primaryContainer,
+          AttendanceStatusColor.fromStatus(context, "present"),
+        ),
+        _tile(
+          context,
+          "Total Working Hours",
+          _formatMinutes(summary.totalMinutes),
+          Colors.indigo,
+        ),
+        _tile(
+          context,
+          "Expected Hours",
+          "${summary.expectedWorkingHours} hrs",
+          Colors.teal,
         ),
       ],
     );

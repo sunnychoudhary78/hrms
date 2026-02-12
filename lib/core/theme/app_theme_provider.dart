@@ -11,7 +11,7 @@ class AppThemeNotifier extends Notifier<Color> {
     _loadSavedColor();
 
     // Default fallback
-    return const Color(0xFF5C6BC0);
+    return const Color(0xFF301B1B);
   }
 
   Future<void> _loadSavedColor() async {

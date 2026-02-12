@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lms/features/attendance/shared/data/attendance_rerpository.dart';
+import 'package:lms/features/attendance/shared/data/attendance_repository_provider.dart';
 import 'package:lms/features/attendance/view_attendance/data/models/attendance_aggregate_model.dart';
 import 'package:lms/features/attendance/view_attendance/data/models/attendance_summary_model.dart';
-import 'package:lms/features/attendance/shared/data/attendance_repository_provider.dart';
+import 'package:lms/features/attendance/shared/data/attendance_rerpository.dart';
 
 final viewAttendanceProvider =
     AsyncNotifierProvider<ViewAttendanceNotifier, ViewAttendanceState>(
       ViewAttendanceNotifier.new,
     );
-
-/// ───────────────── STATE ─────────────────
 
 class ViewAttendanceState {
   final List<AttendanceAggregate> aggregates;
@@ -19,49 +17,32 @@ class ViewAttendanceState {
   const ViewAttendanceState({required this.aggregates, required this.summary});
 }
 
-/// ───────────────── NOTIFIER ─────────────────
-
 class ViewAttendanceNotifier extends AsyncNotifier<ViewAttendanceState> {
   late AttendanceRepository _repo;
-
-  /// 🔑 keep track of current month (needed for refresh after correction)
-  late DateTime _focusedMonth;
+  late DateTime _currentMonth;
 
   @override
   Future<ViewAttendanceState> build() async {
-    debugPrint("🧱 ViewAttendanceNotifier build()");
-
     _repo = ref.read(attendanceRepositoryProvider);
-    _focusedMonth = DateTime.now();
-
-    return _loadMonth(_focusedMonth);
+    _currentMonth = DateTime.now();
+    return _loadMonth(_currentMonth);
   }
 
-  // ───────────────── LOAD MONTH ─────────────────
-
-  Future<ViewAttendanceState> _loadMonth(DateTime d) async {
-    debugPrint("📅 Load attendance → ${d.month}/${d.year}");
-
-    final res = await _repo.fetchAttendance(month: d.month, year: d.year);
+  Future<ViewAttendanceState> _loadMonth(DateTime date) async {
+    final res = await _repo.fetchAttendance(month: date.month, year: date.year);
 
     final summary = await _repo.fetchSummary(
-      "${d.year}-${d.month.toString().padLeft(2, '0')}",
+      "${date.year}-${date.month.toString().padLeft(2, '0')}",
     );
 
     return ViewAttendanceState(aggregates: res.aggregates, summary: summary);
   }
 
-  // ───────────────── CHANGE MONTH ─────────────────
-
-  Future<void> changeMonth(DateTime d) async {
-    debugPrint("🗓️ Change month → ${d.month}/${d.year}");
-
-    _focusedMonth = d;
+  Future<void> changeMonth(DateTime date) async {
+    _currentMonth = date;
     state = const AsyncLoading();
-    state = AsyncData(await _loadMonth(d));
+    state = AsyncData(await _loadMonth(date));
   }
-
-  // ───────────────── REQUEST CORRECTION ─────────────────
 
   Future<void> requestAttendanceCorrection({
     required DateTime date,
@@ -69,8 +50,6 @@ class ViewAttendanceNotifier extends AsyncNotifier<ViewAttendanceState> {
     TimeOfDay? checkOut,
     required String reason,
   }) async {
-    debugPrint("📝 Request attendance correction");
-
     String toIso(DateTime d, TimeOfDay t) {
       return DateTime(
         d.year,
@@ -88,19 +67,9 @@ class ViewAttendanceNotifier extends AsyncNotifier<ViewAttendanceState> {
       "reason": reason,
     };
 
-    debugPrint("📤 Correction payload → $body");
+    await _repo.requestCorrection(body);
 
-    try {
-      await _repo.requestCorrection(body);
-
-      debugPrint("✅ Correction request submitted");
-
-      // 🔄 refresh current month (calendar + summary)
-      await changeMonth(_focusedMonth);
-    } catch (e, st) {
-      debugPrint("❌ Correction request failed → $e");
-      debugPrintStack(stackTrace: st);
-      rethrow;
-    }
+    state = const AsyncLoading();
+    state = AsyncData(await _loadMonth(_currentMonth));
   }
 }

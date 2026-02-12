@@ -1,38 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lms/features/home/data/models/home_dashboard_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lms/core/providers/global_loading_provider.dart';
+import 'package:lms/features/attendance/mark_attendance/presentation/providers/attendance_selectors.dart';
+import 'package:lms/features/attendance/mark_attendance/presentation/providers/mark_attendance_provider.dart';
 
-class HomeWelcomeAttendanceCard extends StatelessWidget {
+class HomeWelcomeAttendanceCard extends ConsumerWidget {
   final String name;
   final String role;
   final String? imageUrl;
-  final TodayAttendanceStatus status;
 
   const HomeWelcomeAttendanceCard({
     super.key,
     required this.name,
     required this.role,
-    required this.status,
     this.imageUrl,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final attendanceAsync = ref.watch(markAttendanceProvider);
 
     final hour = DateTime.now().hour;
-
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
         ? 'Good afternoon'
         : 'Good evening';
-
-    final bool isCheckedIn = status.isCheckedIn;
-
-    final Color statusColor = isCheckedIn ? Colors.green : Colors.orange;
-
-    final String statusText = isCheckedIn ? 'Checked in' : 'Not checked in';
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -43,65 +38,121 @@ class HomeWelcomeAttendanceCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withOpacity(0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  greeting,
-                  style: TextStyle(
-                    color: scheme.onPrimary.withOpacity(.75),
-                    fontSize: 13,
+      child: attendanceAsync.when(
+        loading: () => const SizedBox(height: 120),
+        error: (_, __) => const SizedBox(height: 120),
+        data: (sessions) {
+          final activeSession = ref.watch(activeSessionProvider(sessions));
+
+          final bool isCheckedIn =
+              activeSession != null && activeSession.checkOutTime == null;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// TOP ROW
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          greeting,
+                          style: TextStyle(
+                            color: scheme.onPrimary.withOpacity(.75),
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          name,
+                          style: TextStyle(
+                            color: scheme.onPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          role,
+                          style: TextStyle(
+                            color: scheme.onPrimary.withOpacity(.75),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  name,
-                  style: TextStyle(
-                    color: scheme.onPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                  _Avatar(name: name, imageUrl: imageUrl),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              /// STATUS + ACTION
+              Row(
+                children: [
+                  _StatusChip(
+                    text: isCheckedIn ? "Checked in" : "Not checked in",
+                    color: isCheckedIn ? Colors.green : Colors.orange,
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  role,
-                  style: TextStyle(
-                    color: scheme.onPrimary.withOpacity(.75),
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    _StatusChip(text: statusText, color: statusColor),
-                    const SizedBox(width: 12),
-                    if (status.checkInTime != null)
-                      Text(
-                        isCheckedIn
-                            ? 'Checked in at ${_fmt(status.checkInTime!)}'
-                            : 'Last check-in ${_fmt(status.checkInTime!)}',
-                        style: TextStyle(color: scheme.onPrimary, fontSize: 13),
+
+                  const Spacer(),
+
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isCheckedIn
+                          ? scheme.error
+                          : scheme.onPrimary,
+                      foregroundColor: isCheckedIn
+                          ? scheme.onError
+                          : scheme.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                  ],
+                    ),
+                    icon: Icon(
+                      isCheckedIn ? Icons.logout_rounded : Icons.fingerprint,
+                      size: 18,
+                    ),
+                    label: Text(isCheckedIn ? "Punch Out" : "Punch In"),
+                    onPressed: () async {
+                      final loader = ref.read(globalLoadingProvider.notifier);
+
+                      try {
+                        loader.show();
+
+                        if (isCheckedIn) {
+                          await ref
+                              .read(markAttendanceProvider.notifier)
+                              .punchOut();
+                        } else {
+                          await ref
+                              .read(markAttendanceProvider.notifier)
+                              .punchIn();
+                        }
+                      } finally {
+                        loader.hide();
+                      }
+                    },
+                  ),
+                ],
+              ),
+
+              if (isCheckedIn && activeSession?.checkInTime != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    "Checked in at ${_fmt(activeSession!.checkInTime!)}",
+                    style: TextStyle(color: scheme.onPrimary, fontSize: 13),
+                  ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          _Avatar(name: name, imageUrl: imageUrl),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -168,7 +219,9 @@ class _Avatar extends StatelessWidget {
 
   String _initials(String name) {
     final parts = name.trim().split(' ');
-    if (parts.length == 1) return parts.first[0].toUpperCase();
+    if (parts.length == 1) {
+      return parts.first[0].toUpperCase();
+    }
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 }

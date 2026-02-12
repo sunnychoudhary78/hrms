@@ -4,38 +4,19 @@ import 'leave_status_card.dart';
 
 class LeaveStatusList extends StatelessWidget {
   final List<LeaveStatus> leaves;
-  final String search;
-  final DateTime? selectedDate;
   final Future<void> Function() onRefresh;
   final Function(String, List<String>) onRevoke;
 
   const LeaveStatusList({
     super.key,
     required this.leaves,
-    required this.search,
-    required this.selectedDate,
     required this.onRefresh,
     required this.onRevoke,
   });
 
   @override
   Widget build(BuildContext context) {
-    final text = search.toLowerCase();
-
-    final filtered = leaves.where((l) {
-      final matchesText =
-          text.isEmpty ||
-          (l.leaveType?.toLowerCase().contains(text) ?? false) ||
-          l.reference.toLowerCase().contains(text);
-
-      final matchesDate =
-          selectedDate == null ||
-          DateUtils.isSameDay(DateTime.parse(l.startDate), selectedDate);
-
-      return matchesText && matchesDate;
-    }).toList();
-
-    if (filtered.isEmpty) {
+    if (leaves.isEmpty) {
       return const Center(
         child: Text("No leave requests found", style: TextStyle(fontSize: 16)),
       );
@@ -44,18 +25,21 @@ class LeaveStatusList extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: filtered.length,
+        padding: const EdgeInsets.all(16),
+        itemCount: leaves.length,
         itemBuilder: (context, index) {
-          final leave = filtered[index];
+          final leave = leaves[index];
 
           final List<String> dates = leave.approvedDates.isNotEmpty
               ? leave.approvedDates
               : leave.requestedDates;
 
-          return LeaveStatusCard(
-            leave: leave,
-            onRevoke: dates.isEmpty ? null : () => onRevoke(leave.id, dates),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: LeaveStatusCard(
+              leave: leave,
+              onRevoke: dates.isEmpty ? null : () => onRevoke(leave.id, dates),
+            ),
           );
         },
       ),
