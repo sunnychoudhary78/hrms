@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lms/features/dashboard/data/models/team_dashboard_model.dart';
 import 'package:lms/features/dashboard/presentation/providers/team_dashboard_proividers.dart';
 import 'package:lms/features/dashboard/presentation/screens/employee_attendence_calender_screen.dart';
-import 'package:lms/features/dashboard/presentation/widgets/manager_stat_card.dart';
+import 'package:lms/features/dashboard/presentation/widgets/team_analytics_section.dart';
 import 'package:lms/features/dashboard/presentation/widgets/team_member_card.dart';
+import 'package:lms/features/dashboard/presentation/widgets/team_overview_card.dart';
 import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 import 'package:lms/shared/widgets/app_bar.dart';
 
@@ -27,7 +27,7 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
     return Scaffold(
       drawer: const AppDrawer(),
       backgroundColor: scheme.surfaceContainerLowest,
-      appBar: AppAppBar(title: "dashboard"),
+      appBar: AppAppBar(title: "Dashboard"),
       body: dashboardAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) =>
@@ -42,47 +42,26 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
 
           return CustomScrollView(
             slivers: [
-              /// BODY
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      /// 🔎 Search
                       _searchBar(scheme),
                       const SizedBox(height: 28),
 
-                      /// 🔥 Modern Stats Grid
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ManagerStatCard(
-                              title: "Total",
-                              value: dashboard.total,
-                              icon: Icons.groups_rounded,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: ManagerStatCard(
-                              title: "Present",
-                              value: dashboard.present,
-                              icon: Icons.check_circle_rounded,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: ManagerStatCard(
-                              title: "Absent",
-                              value: dashboard.absent,
-                              icon: Icons.cancel_rounded,
-                            ),
-                          ),
-                        ],
-                      ),
+                      /// 🔥 Premium Team Overview Card
+                      TeamOverviewCard(dashboard: dashboard),
 
                       const SizedBox(height: 36),
 
+                      TeamAnalyticsSection(dashboard: dashboard),
+
+                      const SizedBox(height: 36),
+
+                      /// 👥 Team Section Title
                       Text(
                         "Team Members (${filtered.length})",
                         style: TextStyle(
@@ -93,6 +72,7 @@ class _TeamDashboardScreenState extends ConsumerState<TeamDashboardScreen> {
                       ),
                       const SizedBox(height: 18),
 
+                      /// 👤 Team Members List
                       ...filtered.map(
                         (e) => Padding(
                           padding: const EdgeInsets.only(bottom: 14),

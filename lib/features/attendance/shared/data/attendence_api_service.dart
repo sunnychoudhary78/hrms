@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../../core/network/api_endpoints.dart';
 import '../../../../../core/network/api_service.dart';
@@ -98,5 +100,28 @@ class AttendanceApiService {
     await api.patch('${ApiEndpoints.attendanceCorrections}/$id', body);
 
     debugPrint("⬅️ Correction status updated");
+  }
+
+  // ─────────────────────────────────────────────
+  // SELFIE UPLOAD
+  // ─────────────────────────────────────────────
+
+  // ─────────────────────────────────────────────
+  // SELFIE UPLOAD
+  // ─────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> uploadSelfie(File file) async {
+    final fileName = file.path.split('/').last;
+
+    final formData = FormData.fromMap({
+      "selfie": await MultipartFile.fromFile(file.path, filename: fileName),
+    });
+
+    final res = await api.postMultipart(
+      "/attendance/upload-selfie", // ⚠️ adjust if needed
+      formData,
+    );
+
+    return Map<String, dynamic>.from(res);
   }
 }

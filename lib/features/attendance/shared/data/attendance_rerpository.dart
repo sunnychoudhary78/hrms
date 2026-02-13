@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:lms/features/attendance/correction_attendance/data/models/attendance_request_model.dart';
 import 'package:lms/features/attendance/mark_attendance/data/models/attendance_session_model.dart';
 import 'package:lms/features/attendance/shared/data/attendence_api_service.dart';
@@ -94,5 +96,9 @@ class AttendanceRepository {
       id: id,
       body: {'status': status, if (note != null) 'note': note},
     );
+  }
+
+  Future<Map<String, dynamic>> uploadSelfie(File file) {
+    return api.uploadSelfie(file);
   }
 }
