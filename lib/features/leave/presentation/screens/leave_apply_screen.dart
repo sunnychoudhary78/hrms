@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 import 'package:lms/shared/widgets/app_bar.dart';
+
 import '../providers/leave_apply_provider.dart';
 import '../providers/leave_balance_provider.dart';
+
 import '../widgets/leave_type_dropdown.dart';
 import '../widgets/date_range_picker.dart';
 import '../widgets/reason_input.dart';
 import '../widgets/submit_button.dart';
+
 import '../../data/models/leave_balance_model.dart';
 
 enum DayType { full, half }
@@ -26,8 +29,10 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
   LeaveBalance? selectedLeave;
   DateTime? fromDate;
   DateTime? toDate;
+
   DayType dayType = DayType.full;
   HalfDayPart? halfDayPart;
+
   String reason = '';
   File? document;
 
@@ -47,12 +52,12 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
     }
 
     if (dayType == DayType.half && halfDayPart == null) {
-      _showError("Please select AM or PM for half day");
+      _showError("Please select AM or PM");
       return;
     }
 
     if (isDocumentRequired && document == null) {
-      _showError("Document is required for this leave type");
+      _showError("Document required for this leave");
       return;
     }
 
@@ -82,142 +87,158 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
     final balanceAsync = ref.watch(leaveBalanceProvider);
     final applyState = ref.watch(leaveApplyProvider);
 
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,
-      resizeToAvoidBottomInset: true,
-      appBar: const AppAppBar(
-        title: "Apply Leave",
-        showBack: false, // 👈 Root screen → no back button
-      ),
+      appBar: const AppAppBar(title: "Apply Leave", showBack: false),
       drawer: AppDrawer(),
+
       body: balanceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
+
         error: (e, _) => Center(child: Text(e.toString())),
+
         data: (leaves) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
           children: [
-            _SectionCard(
-              title: "Leave Type",
-              child: LeaveTypeDropdown(
-                leaves: leaves,
-                selected: selectedLeave,
-                onChanged: (leave) => setState(() => selectedLeave = leave),
+            /// SINGLE MAIN CARD
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-            ),
-            const SizedBox(height: 16),
-            _SectionCard(
-              title: "Duration",
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _DayTypeSelector(
-                    value: dayType,
-                    onChanged: (v) {
-                      setState(() {
-                        dayType = v;
-                        halfDayPart = null;
-                        if (dayType == DayType.half && fromDate != null) {
-                          toDate = fromDate;
-                        }
-                      });
-                    },
-                  ),
-                  if (dayType == DayType.half) ...[
-                    const SizedBox(height: 12),
-                    _HalfDaySelector(
-                      value: halfDayPart,
-                      onChanged: (v) => setState(() => halfDayPart = v),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// LEAVE TYPE
+                    _SectionTitle("Leave Type"),
+
+                    LeaveTypeDropdown(
+                      leaves: leaves,
+                      selected: selectedLeave,
+                      onChanged: (leave) =>
+                          setState(() => selectedLeave = leave),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    /// DURATION
+                    _SectionTitle("Duration"),
+
+                    const SizedBox(height: 8),
+
+                    _DayTypeSelector(
+                      value: dayType,
+                      onChanged: (v) {
+                        setState(() {
+                          dayType = v;
+                          halfDayPart = null;
+
+                          if (v == DayType.half && fromDate != null) {
+                            toDate = fromDate;
+                          }
+                        });
+                      },
+                    ),
+
+                    if (dayType == DayType.half) ...[
+                      const SizedBox(height: 12),
+
+                      _HalfDaySelector(
+                        value: halfDayPart,
+                        onChanged: (v) => setState(() => halfDayPart = v),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+
+                    DateRangePicker(
+                      from: fromDate,
+                      to: toDate,
+                      onFromPick: (d) {
+                        setState(() {
+                          fromDate = d;
+                          if (dayType == DayType.half) {
+                            toDate = d;
+                          }
+                        });
+                      },
+                      onToPick: (d) {
+                        setState(() {
+                          toDate = d;
+
+                          if (fromDate != d) {
+                            dayType = DayType.full;
+                            halfDayPart = null;
+                          }
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    /// REASON
+                    _SectionTitle("Reason"),
+
+                    ReasonInput(onChanged: (v) => reason = v),
+
+                    if (isDocumentRequired) ...[
+                      const SizedBox(height: 24),
+
+                      _SectionTitle("Supporting Document"),
+
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.attach_file),
+                        label: Text(
+                          document == null
+                              ? "Attach Document"
+                              : "Document Selected",
+                        ),
+                        onPressed: () {},
+                      ),
+                    ],
+
+                    const SizedBox(height: 28),
+
+                    /// SUBMIT BUTTON INSIDE CARD
+                    SubmitButton(
+                      isLoading: applyState.isLoading,
+                      onPressed: _submit,
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  DateRangePicker(
-                    from: fromDate,
-                    to: toDate,
-                    onFromPick: (d) {
-                      setState(() {
-                        fromDate = d;
-                        if (dayType == DayType.half) {
-                          toDate = d;
-                        }
-                      });
-                    },
-                    onToPick: (d) {
-                      setState(() {
-                        toDate = d;
-                        if (fromDate != null && d != fromDate) {
-                          dayType = DayType.full;
-                          halfDayPart = null;
-                        }
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _SectionCard(
-              title: "Reason",
-              child: ReasonInput(onChanged: (v) => reason = v),
-            ),
-            if (isDocumentRequired) ...[
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: "Supporting Document",
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.attach_file),
-                  label: Text(
-                    document == null ? "Attach Document" : "Document Selected",
-                  ),
-                  onPressed: () {},
                 ),
               ),
-            ],
+            ),
           ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          child: SubmitButton(
-            isLoading: applyState.isLoading,
-            onPressed: _submit,
-          ),
         ),
       ),
     );
   }
 }
 
-/// ===========================================================
-/// ==================== SUPPORT WIDGETS =======================
-/// ===========================================================
+/// CLEAN SECTION TITLE
+class _SectionTitle extends StatelessWidget {
+  final String text;
 
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final Widget child;
-
-  const _SectionCard({required this.title, required this.child});
+  const _SectionTitle(this.text);
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurfaceVariant,
         ),
       ),
     );
@@ -259,6 +280,7 @@ class _HalfDaySelector extends StatelessWidget {
           selected: value == HalfDayPart.am,
           onSelected: (_) => onChanged(HalfDayPart.am),
         ),
+
         ChoiceChip(
           label: const Text("PM"),
           selected: value == HalfDayPart.pm,

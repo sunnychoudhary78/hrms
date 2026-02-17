@@ -167,6 +167,33 @@ class ThemeSettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 30),
+
+          /// RESET BUTTON
+          _SectionCard(
+            title: "Reset",
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text("Reset to Defaults"),
+                    onPressed: () {
+                      ref.read(appThemeProvider.notifier).resetColor();
+                      ref.read(themeModeProvider.notifier).resetMode();
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Theme reset to default")),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

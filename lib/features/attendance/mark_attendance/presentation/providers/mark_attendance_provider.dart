@@ -1,11 +1,13 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/core/providers/global_loading_provider.dart';
 import 'package:lms/core/providers/location_providers.dart';
 import 'package:lms/core/services/location_service.dart';
 import 'package:lms/core/services/selfie_service.dart';
+import 'package:lms/features/attendance/shared/data/attendance_repository_provider.dart';
 import 'package:lms/features/attendance/shared/data/attendance_rerpository.dart';
 import 'package:lms/features/attendance/mark_attendance/data/models/attendance_session_model.dart';
-import 'package:lms/features/attendance/shared/data/attendance_repository_provider.dart';
 
 final markAttendanceProvider =
     AsyncNotifierProvider<MarkAttendanceNotifier, List<AttendanceSession>>(
@@ -15,135 +17,178 @@ final markAttendanceProvider =
 class MarkAttendanceNotifier extends AsyncNotifier<List<AttendanceSession>> {
   late AttendanceRepository _repo;
   late LocationService _locationService;
-  late SelfieService _selfieService; // ✅ ADD THIS
+  late SelfieService _selfieService;
 
   @override
   Future<List<AttendanceSession>> build() async {
     _repo = ref.read(attendanceRepositoryProvider);
     _locationService = ref.read(locationServiceProvider);
-    _selfieService = SelfieService(); // ✅ INIT HERE
+    _selfieService = SelfieService();
 
     return _loadToday();
   }
 
+  // ─────────────────────────────────────────────
+  // LOAD TODAY
+  // ─────────────────────────────────────────────
+
   Future<List<AttendanceSession>> _loadToday() async {
     final now = DateTime.now();
+
     final res = await _repo.fetchAttendance(month: now.month, year: now.year);
+
     return res.sessions;
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = AsyncData(await _loadToday());
+    try {
+      final fresh = await _loadToday();
+      state = AsyncData(fresh);
+    } catch (_) {
+      // preserve current state, do nothing
+    }
   }
 
-  Future<Map<String, double>> _getUserLocation() async {
+  // ─────────────────────────────────────────────
+  // LOCATION
+  // ─────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> _getUserLocation() async {
     final ready = await _locationService.ensureServiceAndPermission();
+
     if (!ready) {
       throw Exception("Location not available");
     }
 
     final pos = await _locationService.getCurrentLocation();
+
     if (pos == null) {
       throw Exception("Unable to fetch location");
     }
 
-    return {"lat": pos.latitude, "lng": pos.longitude};
+    return {
+      "lat": pos.latitude,
+      "lng": pos.longitude,
+      "accuracy": pos.accuracy,
+    };
   }
 
   // ─────────────────────────────────────────────
-  // ✅ UPDATED PUNCH IN FLOW (SELFIE FIRST)
+  // CORE HANDLER (INDUSTRY STANDARD)
   // ─────────────────────────────────────────────
 
-  Future<void> punchIn() async {
+  Future<void> _handleAttendance({
+    required BuildContext context,
+    required bool isCheckIn,
+    required bool isRemote,
+    String? remoteReason,
+  }) async {
     final loader = ref.read(globalLoadingProvider.notifier);
 
-    try {
-      loader.show("Opening camera…");
+    // Prevent duplicate taps
+    if (ref.read(globalLoadingProvider).isLoading) {
+      return;
+    }
 
-      // 1️⃣ Capture selfie
-      final selfie = await _selfieService.captureSelfie();
+    try {
+      // Capture selfie
+      final File? selfie = await _selfieService.captureSelfie(context);
+
       if (selfie == null) {
         throw Exception("Selfie is required");
       }
 
-      // 2️⃣ Compress image
-      loader.update("Compressing image…");
-      final compressed = await _selfieService.compressImage(selfie);
+      loader.showLoading("Processing selfie…");
 
-      final sizeInKb = await compressed.length() / 1024;
-      if (sizeInKb > 500) {
+      loader.update("Compressing image");
+
+      final File compressed = await _selfieService.compressImage(selfie);
+
+      final sizeKb = await compressed.length() / 1024;
+
+      if (sizeKb > 500) {
         throw Exception("Image must be less than 500KB");
       }
 
-      // 3️⃣ Upload selfie
-      loader.update("Uploading selfie…");
-      final selfieResponse = await _repo.uploadSelfie(compressed);
+      final body = <String, dynamic>{"source": isRemote ? "remote" : "mobile"};
 
-      // 4️⃣ Get location
-      loader.update("Fetching location…");
-      final location = await _getUserLocation();
+      if (!isRemote) {
+        loader.update("Fetching location");
 
-      // 5️⃣ Punch in
-      loader.update("Marking attendance…");
-      await _repo.punchIn({
-        "source": "mobile",
-        "location": location,
-        "selfieId": selfieResponse["id"],
-        "faceMatchScore": selfieResponse["score"],
-      });
-
-      loader.update("Refreshing sessions…");
-      await refresh();
-    } catch (e, st) {
-      state = AsyncError(e, st); // ✅ proper riverpod error
-      rethrow;
-    } finally {
-      loader.hide();
-    }
-  }
-
-  // ─────────────────────────────────────────────
-  // PUNCH OUT (UNCHANGED)
-  // ─────────────────────────────────────────────
-
-  Future<void> punchOut() async {
-    final loader = ref.read(globalLoadingProvider.notifier);
-
-    try {
-      loader.show("Preparing punch out…");
-
-      final sessions = state.value ?? [];
-
-      final active = sessions.firstWhere(
-        (s) => s.checkOutTime == null,
-        orElse: () => throw Exception("No active session"),
-      );
-
-      if (active.source == 'remote') {
-        loader.update("Marking remote punch out…");
-        await _repo.punchOut({});
-      } else {
-        loader.update("Fetching location…");
         final location = await _getUserLocation();
 
-        loader.update("Marking attendance…");
-        await _repo.punchOut({"location": location});
+        body["location"] = location;
       }
 
-      loader.update("Refreshing sessions…");
+      if (isRemote) {
+        body["remoteRequested"] = true;
+
+        if (remoteReason != null && remoteReason.isNotEmpty) {
+          body["remoteReason"] = remoteReason;
+        }
+      }
+
+      loader.update(isCheckIn ? "Marking check-in" : "Marking check-out");
+
+      if (isCheckIn) {
+        await _repo.punchInMultipart(file: compressed, body: body);
+      } else {
+        await _repo.punchOutMultipart(file: compressed, body: body);
+      }
+
+      loader.update("Refreshing");
+
       await refresh();
-    } finally {
-      loader.hide();
+
+      loader.showSuccess(
+        isCheckIn
+            ? (isRemote ? "Remote check-in successful" : "Check-in successful")
+            : (isRemote
+                  ? "Remote check-out successful"
+                  : "Check-out successful"),
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      loader.showError(e.toString());
+      return;
     }
   }
 
-  Future<void> punchInRemote(String reason) async {
-    await _repo.punchIn({
-      "source": "remote",
-      "remoteRequested": true,
-      "remoteReason": reason,
-    });
-    await refresh();
+  // ─────────────────────────────────────────────
+  // PUBLIC METHODS
+  // ─────────────────────────────────────────────
+
+  /// Mobile Check-In
+  Future<void> punchIn(BuildContext context) async {
+    await _handleAttendance(context: context, isCheckIn: true, isRemote: false);
+  }
+
+  /// Mobile Check-Out
+  Future<void> punchOut(BuildContext context) async {
+    await _handleAttendance(
+      context: context,
+      isCheckIn: false,
+      isRemote: false,
+    );
+  }
+
+  /// Remote Check-In
+  Future<void> punchInRemote(BuildContext context, String reason) async {
+    await _handleAttendance(
+      context: context,
+      isCheckIn: true,
+      isRemote: true,
+      remoteReason: reason,
+    );
+  }
+
+  /// Remote Check-Out
+  Future<void> punchOutRemote(BuildContext context, String reason) async {
+    await _handleAttendance(
+      context: context,
+      isCheckIn: false,
+      isRemote: true,
+      remoteReason: reason,
+    );
   }
 }

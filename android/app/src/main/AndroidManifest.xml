@@ -3,11 +3,14 @@
 <!-- Location permissions -->
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+<uses-permission android:name="android.permission.CAMERA"/>
+ <uses-permission android:name="android.permission.INTERNET"/>
+
 
 <!-- (optional but recommended for background edge cases) -->
 <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
     <application
-        android:label="lms"
+        android:label="Immortal-HRMS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

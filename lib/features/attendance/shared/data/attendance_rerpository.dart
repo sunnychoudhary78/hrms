@@ -11,9 +11,7 @@ class AttendanceRepository {
 
   AttendanceRepository(this.api);
 
-  // ─────────────────────────────────────────────
-  // MONTHLY ATTENDANCE
-  // ─────────────────────────────────────────────
+  // FETCH ATTENDANCE
 
   Future<AttendanceResponse> fetchAttendance({
     required int month,
@@ -23,18 +21,10 @@ class AttendanceRepository {
     return AttendanceResponse.fromJson(res);
   }
 
-  // ─────────────────────────────────────────────
-  // SUMMARY (USED BY HOME DASHBOARD)
-  // ─────────────────────────────────────────────
-
   Future<AttendanceSummary> fetchSummary(String ym) async {
     final res = await api.fetchSummary(ym);
     return AttendanceSummary.fromJson(res);
   }
-
-  // ─────────────────────────────────────────────
-  // ✅ NEW: TODAY ATTENDANCE (HOME DASHBOARD)
-  // ─────────────────────────────────────────────
 
   Future<List<AttendanceSession>> fetchAttendanceToday() async {
     final now = DateTime.now();
@@ -43,62 +33,55 @@ class AttendanceRepository {
 
     final attendance = AttendanceResponse.fromJson(res);
 
-    bool isSameDay(DateTime a, DateTime b) {
-      return a.year == b.year && a.month == b.month && a.day == b.day;
-    }
+    bool isSameDay(DateTime a, DateTime b) =>
+        a.year == b.year && a.month == b.month && a.day == b.day;
 
     return attendance.sessions
         .where((s) => isSameDay(s.checkInTime, now))
         .toList();
   }
 
-  // ─────────────────────────────────────────────
-  // CHECK IN / OUT
-  // ─────────────────────────────────────────────
+  // NORMAL CHECK-IN
 
   Future<void> punchIn(Map<String, dynamic> body) => api.punchIn(body);
 
+  // ✅ MULTIPART CHECK-IN
+
+  Future<void> punchInMultipart({
+    required File file,
+    required Map<String, dynamic> body,
+  }) => api.punchInMultipart(file: file, body: body);
+
+  // ✅ MULTIPART CHECK-OUT
+
+  Future<void> punchOutMultipart({
+    required File file,
+    required Map<String, dynamic> body,
+  }) => api.punchOutMultipart(file: file, body: body);
+
+  // CHECK OUT
+
   Future<void> punchOut(Map<String, dynamic> body) => api.punchOut(body);
 
-  // ─────────────────────────────────────────────
-  // CORRECTIONS (EMPLOYEE)
-  // ─────────────────────────────────────────────
+  // CORRECTIONS
 
   Future<void> requestCorrection(Map<String, dynamic> body) =>
       api.requestCorrection(body);
 
-  // ─────────────────────────────────────────────
-  // MANAGER: FETCH CORRECTIONS
-  // ─────────────────────────────────────────────
-
   Future<List<AttendanceRequest>> fetchAttendanceCorrections({
     required String status,
   }) async {
-    final List list = await api.fetchAttendanceCorrectionsManaged(
-      status: status,
-    );
+    final list = await api.fetchAttendanceCorrectionsManaged(status: status);
 
-    return list
-        .map((e) => AttendanceRequest.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return list.map((e) => AttendanceRequest.fromJson(e)).toList();
   }
-
-  // ─────────────────────────────────────────────
-  // MANAGER: APPROVE / REJECT
-  // ─────────────────────────────────────────────
 
   Future<void> updateCorrectionStatus({
     required String id,
     required String status,
     String? note,
-  }) async {
-    await api.updateCorrectionStatus(
-      id: id,
-      body: {'status': status, if (note != null) 'note': note},
-    );
-  }
-
-  Future<Map<String, dynamic>> uploadSelfie(File file) {
-    return api.uploadSelfie(file);
-  }
+  }) => api.updateCorrectionStatus(
+    id: id,
+    body: {"status": status, if (note != null) "note": note},
+  );
 }

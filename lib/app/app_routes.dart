@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lms/features/attendance/view_attendance/presentation/screens/view_attendance_screen.dart';
 import 'package:lms/features/auth/presentation/screens/change_password_screen.dart';
+import 'package:lms/features/auth/presentation/screens/forgot_passowrd_screen.dart';
+import 'package:lms/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:lms/features/dashboard/presentation/screens/team_dashboard_screeen.dart';
 import 'package:lms/features/leave/presentation/screens/leave_apply_screen.dart';
 import 'package:lms/features/leave/presentation/screens/leave_approve_screen.dart';
@@ -30,6 +32,14 @@ class AppRoutes {
     '/mark-attendance': (_) => const MarkAttendanceScreen(),
     '/correct-attendance': (_) => const AttendanceCorrectionScreen(),
     '/notifications': (_) => const NotificationScreen(),
-    '/settings': (context) => const ThemeSettingsScreen(),
+    '/settings': (_) => const ThemeSettingsScreen(),
+
+    // ✅ ADD THESE TWO
+    '/forgot-password': (_) => const ForgotPasswordScreen(),
+
+    '/reset-password': (context) {
+      final email = ModalRoute.of(context)!.settings.arguments as String;
+      return ResetPasswordScreen(email: email);
+    },
   };
 }

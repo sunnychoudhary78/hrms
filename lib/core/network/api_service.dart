@@ -96,4 +96,22 @@ class ApiService {
       response: response,
     );
   }
+
+  Future<dynamic> delete(String endpoint, Map<String, dynamic> data) async {
+    debugPrint("🌐 DELETE ${_dio.options.baseUrl}$endpoint");
+    debugPrint("📦 BODY: $data");
+
+    try {
+      final response = await _dio.delete(endpoint, data: data);
+
+      debugPrint("✅ DELETE success | status=${response.statusCode}");
+
+      return _handle(response);
+    } on DioException catch (e) {
+      debugPrint("❌ DELETE failed | endpoint=$endpoint");
+      debugPrint("❌ Status: ${e.response?.statusCode}");
+      debugPrint("❌ Response: ${e.response?.data}");
+      rethrow;
+    }
+  }
 }

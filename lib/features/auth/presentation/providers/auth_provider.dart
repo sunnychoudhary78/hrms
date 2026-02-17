@@ -92,6 +92,42 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   // ─────────────────────────────────────────────
+  // 🔑 FORGOT PASSWORD (SEND OTP)
+  // ─────────────────────────────────────────────
+
+  Future<void> forgotPassword(String email) async {
+    state = state.copyWith(isLoading: true);
+
+    try {
+      await _authApi.forgotPassword(email);
+    } catch (_) {
+      rethrow;
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(isLoading: true);
+
+    try {
+      await _authApi.resetPassword(
+        email: email,
+        otp: otp,
+        newPassword: newPassword,
+      );
+    } catch (_) {
+      rethrow;
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // 🔑 CHANGE PASSWORD
   // ─────────────────────────────────────────────
 
@@ -110,6 +146,37 @@ class AuthNotifier extends Notifier<AuthState> {
       );
     } finally {
       state = state.copyWith(isLoading: false);
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // 🖼️ UPDATE PROFILE IMAGE
+  // ─────────────────────────────────────────────
+
+  // ─────────────────────────────────────────────
+  // 🖼️ Upload profile image
+  // ─────────────────────────────────────────────
+
+  Future<void> uploadProfileImage(File file) async {
+    try {
+      state = state.copyWith(isLoading: true);
+
+      await _authApi.uploadProfileImage(file);
+
+      // refresh profile
+      final profileJson = await _authApi.fetchProfile();
+      final profile = Userdetails.fromJson(profileJson);
+
+      state = state.copyWith(
+        profile: profile,
+        profileUrl: profile.profilePicture != null
+            ? ApiConstants.imageBaseUrl + profile.profilePicture!
+            : '',
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+      rethrow;
     }
   }
 

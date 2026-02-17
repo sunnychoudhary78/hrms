@@ -18,4 +18,9 @@ class NotificationApiService {
   Future<void> markAsRead(String id) async {
     await api.patch('/notifications/$id/read', {});
   }
+
+  // 🗑️ DELETE notifications (single or multiple)
+  Future<void> deleteNotifications(List<String> ids) async {
+    await api.delete('/notifications', {"ids": ids});
+  }
 }

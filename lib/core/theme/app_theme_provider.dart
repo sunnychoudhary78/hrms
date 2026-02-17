@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AppThemeNotifier extends Notifier<Color> {
   static const _key = 'app_primary_color';
+  Color defaultAppColor = Colors.indigo;
 
   @override
   Color build() {
@@ -11,7 +12,7 @@ class AppThemeNotifier extends Notifier<Color> {
     _loadSavedColor();
 
     // Default fallback
-    return const Color(0xFF301B1B);
+    return defaultAppColor;
   }
 
   Future<void> _loadSavedColor() async {
@@ -28,6 +29,11 @@ class AppThemeNotifier extends Notifier<Color> {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_key, newColor.value);
+  }
+
+  /// ✅ RESET
+  void resetColor() {
+    state = defaultAppColor;
   }
 }
 

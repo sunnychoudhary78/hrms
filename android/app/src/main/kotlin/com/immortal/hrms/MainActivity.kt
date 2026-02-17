@@ -1,4 +1,4 @@
-package com.example.lmsapp
+package com.immortal.hrms
 
 import io.flutter.embedding.android.FlutterActivity
 

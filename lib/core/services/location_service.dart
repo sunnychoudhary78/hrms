@@ -1,44 +1,70 @@
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
-  // 🔐 Ensure permission + GPS enabled
+  static const Duration _permissionTimeout = Duration(seconds: 5);
+  static const Duration _locationTimeout = Duration(seconds: 10);
+
+  // 🔐 Ensure permission + GPS enabled safely
   Future<bool> ensureServiceAndPermission() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (permission == LocationPermission.denied) return false;
-
-    if (permission == LocationPermission.deniedForever) {
-      await Geolocator.openAppSettings();
-      return false;
-    }
-
-    // ⚡ Try to trigger system GPS popup
     try {
-      await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
-      );
-    } catch (_) {}
+      // Check permission
+      LocationPermission permission = await Geolocator.checkPermission();
 
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
-    if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
+      if (permission == LocationPermission.denied) {
+        return false;
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        await Geolocator.openAppSettings();
+        return false;
+      }
+
+      // Check GPS service enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+        return false;
+      }
+
+      // Try quick location fetch to trigger system resolution if needed
+      try {
+        await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+        ).timeout(_permissionTimeout);
+      } catch (_) {
+        // Ignore here, actual fetch will happen later
+      }
+
+      return true;
+    } catch (_) {
       return false;
     }
-
-    return true;
   }
 
-  // 📍 Get current location
+  // 📍 Get current location safely with timeout
   Future<Position?> getCurrentLocation() async {
     try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+      if (!serviceEnabled) {
+        return null;
+      }
+
+      final permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      );
+      ).timeout(_locationTimeout);
     } catch (_) {
       return null;
     }

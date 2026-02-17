@@ -7,7 +7,7 @@ class LeaveApproveApiService {
 
   // 📥 Manager pending requests
   Future<List<dynamic>> fetchManagerRequests() async {
-    final res = await api.get('leave-requests/manager/pending');
+    final res = await api.get('leave-requests/manager/requests/all');
 
     if (res is Map && res['data'] is List) {
       return res['data'];

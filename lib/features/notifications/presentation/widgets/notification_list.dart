@@ -17,24 +17,76 @@ class NotificationList extends ConsumerWidget {
       itemBuilder: (context, index) {
         final n = notifications[index];
 
-        // ✅ boolean based on backend
+        final String id = n["id"];
+
         final bool isUnread = n["is_read"] == false;
 
-        // ✅ correct backend key
         final DateTime createdAt =
             DateTime.tryParse(n["createdAt"] ?? "") ?? DateTime.now();
 
-        return NotificationTile(
-          icon: _iconForType(n["type"]),
-          title: n["title"] ?? "Notification",
-          subtitle: n["message"] ?? "",
-          time: _formatTime(createdAt),
-          isUnread: isUnread,
-          onTap: () {
-            if (isUnread) {
-              ref.read(notificationProvider.notifier).markAsRead(n["id"]);
-            }
+        return Dismissible(
+          key: ValueKey(id),
+
+          direction: DismissDirection.endToStart,
+
+          // red delete background
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.delete, color: Colors.white, size: 26),
+          ),
+
+          // confirmation dialog
+          confirmDismiss: (_) async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text("Delete notification"),
+                  content: const Text(
+                    "Are you sure you want to delete this notification?",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text("Cancel"),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        "Delete",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+
+            return confirm ?? false;
           },
+
+          // delete action
+          onDismissed: (_) {
+            ref.read(notificationProvider.notifier).deleteNotification(id);
+          },
+
+          child: NotificationTile(
+            icon: _iconForType(n["type"]),
+            title: n["title"] ?? "Notification",
+            subtitle: n["message"] ?? "",
+            time: _formatTime(createdAt),
+            isUnread: isUnread,
+            onTap: () {
+              if (isUnread) {
+                ref.read(notificationProvider.notifier).markAsRead(id);
+              }
+            },
+          ),
         );
       },
     );

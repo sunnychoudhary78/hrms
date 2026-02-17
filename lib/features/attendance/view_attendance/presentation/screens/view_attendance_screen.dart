@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
 import 'package:lms/features/attendance/correction_attendance/presentation/dialogs/request_correction_dialog.dart';
 import 'package:lms/features/attendance/view_attendance/presentation/providers/view_attendance_provider.dart';
-import 'package:lms/features/attendance/view_attendance/presentation/widgets/attendance_calender.dart';
 import 'package:lms/features/attendance/view_attendance/presentation/widgets/view_attendance_header.dart';
 import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
+
 import 'package:lms/shared/widgets/app_bar.dart';
+import 'package:lms/shared/widgets/attendance_calender_widget.dart';
+import 'package:lms/shared/widgets/attendance_day_detail_bottom_sheet.dart';
+
+import 'package:lms/features/dashboard/data/models/attendance_day_data.dart';
+import 'package:lms/features/attendance/mark_attendance/data/models/attendance_session_model.dart';
+
 import '../widgets/attendance_summary_grid.dart';
 import '../widgets/attendance_pie_chart.dart';
 
@@ -21,15 +29,67 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
   DateTime focused = DateTime.now();
   DateTime? selectedDay;
 
+  ////////////////////////////////////////////////////////////////
+  /// BUILD ATTENDANCE MAP FROM AGGREGATES + SESSIONS
+  ////////////////////////////////////////////////////////////////
+
+  Map<String, AttendanceDayData> _buildAttendanceMap(
+    List aggregates,
+    List<AttendanceSession> sessions,
+  ) {
+    final Map<String, List<AttendanceSession>> sessionsByDate = {};
+
+    for (final s in sessions) {
+      final key = DateFormat('yyyy-MM-dd').format(s.checkInTime);
+
+      sessionsByDate.putIfAbsent(key, () => []);
+      sessionsByDate[key]!.add(s);
+    }
+
+    final Map<String, AttendanceDayData> map = {};
+
+    for (final agg in aggregates) {
+      final key = DateFormat('yyyy-MM-dd').format(agg.date);
+
+      final daySessions = sessionsByDate[key] ?? [];
+
+      final totalMinutes = daySessions.fold<int>(
+        0,
+        (sum, s) => sum + (s.durationMinutes ?? 0),
+      );
+
+      map[key] = AttendanceDayData(
+        date: key,
+        status: agg.status,
+        totalMinutes: totalMinutes,
+        sessions: daySessions.map((s) {
+          return AttendanceSessionData(
+            checkIn: s.checkInTime,
+            checkOut: s.checkOutTime,
+            durationMinutes: s.durationMinutes ?? 0,
+            source: s.source,
+          );
+        }).toList(),
+      );
+    }
+
+    return map;
+  }
+
+  ////////////////////////////////////////////////////////////////
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
     final async = ref.watch(viewAttendanceProvider);
 
     return Scaffold(
       appBar: const AppAppBar(title: "View Attendance"),
       drawer: const AppDrawer(),
+
       backgroundColor: scheme.surfaceContainerLowest,
+
       body: async.when(
         loading: () =>
             Center(child: CircularProgressIndicator(color: scheme.primary)),
@@ -39,7 +99,6 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
         ),
 
         data: (state) {
-          final aggregates = state.aggregates;
           final summary = state.summary;
 
           if (summary == null) {
@@ -51,29 +110,83 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
             );
           }
 
+          ////////////////////////////////////////////////////////////
+          /// BUILD MAP FOR CALENDAR
+          ////////////////////////////////////////////////////////////
+
+          final attendanceMap = _buildAttendanceMap(
+            state.aggregates,
+            state.sessions,
+          );
+
+          ////////////////////////////////////////////////////////////
+
           return RefreshIndicator(
             onRefresh: () async {
               await ref
                   .read(viewAttendanceProvider.notifier)
                   .changeMonth(focused);
             },
+
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
+
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
                   const ViewAttendanceHeader(),
+
                   const SizedBox(height: 24),
 
-                  /// ───────────── CALENDAR CARD ─────────────
+                  ////////////////////////////////////////////////////////
+                  /// PREMIUM CALENDAR
+                  ////////////////////////////////////////////////////////
                   _Section(
                     title: "Attendance Calendar",
-                    child: AttendanceCalendar(
+
+                    child: AttendanceCalendarWidget(
                       focusedDay: focused,
+
                       selectedDay: selectedDay,
-                      aggregates: aggregates,
-                      onMonthChange: (d) {
+
+                      ////////////////////////////////////////////////////
+                      /// STATUS RESOLVER
+                      ////////////////////////////////////////////////////
+                      statusResolver: (day) {
+                        final key = DateFormat('yyyy-MM-dd').format(day);
+
+                        return attendanceMap[key]?.status;
+                      },
+
+                      ////////////////////////////////////////////////////
+                      /// DAY SELECTED
+                      ////////////////////////////////////////////////////
+                      onDaySelected: (selected, focusedDay) {
+                        setState(() {
+                          selectedDay = selected;
+                          focused = focusedDay;
+                        });
+
+                        final key = DateFormat('yyyy-MM-dd').format(selected);
+
+                        final dayData = attendanceMap[key];
+
+                        AttendanceDayDetailBottomSheet.show(
+                          context,
+
+                          date: selected,
+
+                          data: dayData,
+                        );
+                      },
+
+                      ////////////////////////////////////////////////////
+                      /// MONTH CHANGE
+                      ////////////////////////////////////////////////////
+                      onPageChanged: (d) {
                         setState(() {
                           focused = d;
                         });
@@ -82,31 +195,38 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
                             .read(viewAttendanceProvider.notifier)
                             .changeMonth(d);
                       },
-                      onDaySelected: (d) {
-                        setState(() => selectedDay = d);
-                      },
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  /// ───────────── CORRECTION BUTTON ─────────────
+                  ////////////////////////////////////////////////////////
+                  /// CORRECTION BUTTON
+                  ////////////////////////////////////////////////////////
                   SizedBox(
                     width: double.infinity,
+
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.edit_calendar_rounded),
+
                       label: const Text("Request Attendance Correction"),
+
                       style: ElevatedButton.styleFrom(
                         backgroundColor: scheme.primary,
+
                         foregroundColor: scheme.onPrimary,
+
                         padding: const EdgeInsets.symmetric(vertical: 14),
+
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
+
                       onPressed: () {
                         showRequestCorrectionDialog(
                           context: context,
+
                           selectedDate: selectedDay ?? DateTime.now(),
                         );
                       },
@@ -115,21 +235,30 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
 
                   const SizedBox(height: 28),
 
-                  /// ───────────── SUMMARY GRID ─────────────
+                  ////////////////////////////////////////////////////////
+                  /// SUMMARY GRID
+                  ////////////////////////////////////////////////////////
                   _Section(
                     title: "Monthly Summary",
+
                     child: AttendanceSummaryGrid(summary: summary),
                   ),
 
                   const SizedBox(height: 28),
 
-                  /// ───────────── PIE CHART ─────────────
+                  ////////////////////////////////////////////////////////
+                  /// PIE CHART
+                  ////////////////////////////////////////////////////////
                   _Section(
                     title: "Attendance Breakdown",
+
                     child: AttendancePieChart(
                       present: summary.workingDays,
+
                       absent: summary.absentDays,
+
                       late: summary.lateDays,
+
                       leave: summary.totalLeaves,
                     ),
                   ),
@@ -143,6 +272,10 @@ class _ViewAttendanceScreenState extends ConsumerState<ViewAttendanceScreen> {
   }
 }
 
+//////////////////////////////////////////////////////////////
+// SECTION CARD
+//////////////////////////////////////////////////////////////
+
 class _Section extends StatelessWidget {
   final String title;
   final Widget child;
@@ -155,12 +288,17 @@ class _Section extends StatelessWidget {
 
     return Card(
       elevation: 0,
+
       color: scheme.surface,
+
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+
       child: Padding(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
             Text(
               title,
@@ -168,7 +306,9 @@ class _Section extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
+
             const SizedBox(height: 12),
+
             child,
           ],
         ),

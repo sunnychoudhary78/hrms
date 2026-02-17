@@ -8,7 +8,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     _loadSavedMode();
-    return ThemeMode.dark; // default
+    return ThemeMode.light; // default
   }
 
   Future<void> _loadSavedMode() async {
@@ -25,6 +25,11 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_key, mode.index);
+  }
+
+  /// ✅ RESET
+  void resetMode() {
+    state = ThemeMode.light;
   }
 }
 

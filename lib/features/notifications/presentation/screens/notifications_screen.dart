@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lms/features/home/presentation/widgets/app_drawer.dart';
 import 'package:lms/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:lms/features/notifications/presentation/widgets/notification_list.dart';
 import 'package:lms/shared/widgets/app_bar.dart';

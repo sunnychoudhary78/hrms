@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lms/features/dashboard/presentation/providers/team_attendance_provider.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import '../../data/models/team_dashboard_model.dart';
 import 'package:lms/shared/widgets/app_bar.dart';
+import 'package:lms/shared/widgets/attendance_calender_widget.dart';
+import 'package:lms/shared/widgets/attendance_day_detail_bottom_sheet.dart';
+import '../../data/models/team_dashboard_model.dart';
+import '../providers/team_attendance_provider.dart';
 
 class EmployeeAttendanceCalendarScreen extends ConsumerStatefulWidget {
   final TeamEmployee employee;
@@ -21,37 +22,59 @@ class _EmployeeAttendanceCalendarScreenState
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
-  Color _statusColor(String? status) {
+  ////////////////////////////////////////////////////////////////
+  /// LEGEND ITEM
+  ////////////////////////////////////////////////////////////////
+
+  Widget _legendItem(String label, Color color, ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: scheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  ////////////////////////////////////////////////////////////////
+
+  Color _statusColor(String status) {
     switch (status) {
       case "On-Time":
-        return Colors.green;
+        return const Color(0xFF22C55E);
       case "Late":
-        return Colors.orange;
+        return const Color(0xFFF59E0B);
       case "Absent":
-        return Colors.red;
+        return const Color(0xFFEF4444);
       case "Holiday":
-        return Colors.blue;
+        return const Color(0xFF3B82F6);
       case "On-Leave":
-        return Colors.purple;
+        return const Color(0xFFA855F7);
       default:
-        return Colors.transparent;
+        return Colors.grey;
     }
   }
 
-  Widget _legendItem(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
+  ////////////////////////////////////////////////////////////////
 
   @override
   Widget build(BuildContext context) {
@@ -66,123 +89,158 @@ class _EmployeeAttendanceCalendarScreenState
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,
       appBar: AppAppBar(title: widget.employee.name),
+
       body: attendanceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
 
         error: (error, stack) => Center(child: Text(error.toString())),
 
         data: (attendanceMap) {
+          ////////////////////////////////////////////////////////////
+
+          String? resolveStatus(DateTime day) {
+            final key = DateFormat('yyyy-MM-dd').format(day);
+            return attendanceMap[key]?.status;
+          }
+
+          ////////////////////////////////////////////////////////////
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
-
-                /// 📅 Calendar
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: scheme.surface,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.shadow.withOpacity(0.05),
-                        blurRadius: 18,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: TableCalendar(
-                    firstDay: DateTime(2020),
-                    lastDay: DateTime(2035),
-                    focusedDay: _focusedDay,
-                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-
-                    onDaySelected: (selectedDay, focusedDay) {
-                      setState(() {
-                        _selectedDay = selectedDay;
-                        _focusedDay = focusedDay;
-                      });
-                    },
-
-                    onPageChanged: (focusedDay) {
-                      setState(() {
-                        _focusedDay = focusedDay;
-                      });
-                    },
-
-                    calendarStyle: const CalendarStyle(
-                      todayDecoration: BoxDecoration(
-                        color: Colors.black12,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-
-                    headerStyle: const HeaderStyle(
-                      formatButtonVisible: false,
-                      titleCentered: true,
-                    ),
-
-                    calendarBuilders: CalendarBuilders(
-                      defaultBuilder: (context, day, _) {
-                        final key = DateFormat('yyyy-MM-dd').format(day);
-
-                        final status = attendanceMap[key];
-
-                        if (status == null) return null;
-
-                        final color = _statusColor(status);
-
-                        return Container(
-                          margin: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${day.day}',
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
+                _EmployeeHeader(employee: widget.employee),
 
                 const SizedBox(height: 24),
 
-                /// 🎨 Legend Section
+                ////////////////////////////////////////////////////
+                /// CALENDAR
+                ////////////////////////////////////////////////////
+                AttendanceCalendarWidget(
+                  focusedDay: _focusedDay,
+                  selectedDay: _selectedDay,
+
+                  statusResolver: resolveStatus,
+
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                    });
+
+                    final key = DateFormat('yyyy-MM-dd').format(selectedDay);
+
+                    final dayData = attendanceMap[key];
+
+                    AttendanceDayDetailBottomSheet.show(
+                      context,
+                      date: selectedDay,
+                      data: dayData,
+                    );
+                  },
+
+                  onPageChanged: (focusedDay) {
+                    setState(() {
+                      _focusedDay = focusedDay;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 28),
+
+                ////////////////////////////////////////////////////
+                /// LEGEND
+                ////////////////////////////////////////////////////
                 Text(
-                  "Status Legend",
+                  "Attendance Legend",
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 14),
 
                 Wrap(
-                  spacing: 18,
-                  runSpacing: 12,
+                  spacing: 10,
+                  runSpacing: 10,
                   children: [
-                    _legendItem("On-Time", Colors.green),
-                    _legendItem("Late", Colors.orange),
-                    _legendItem("Absent", Colors.red),
-                    _legendItem("Holiday", Colors.blue),
-                    _legendItem("On-Leave", Colors.purple),
+                    _legendItem("On-Time", _statusColor("On-Time"), scheme),
+
+                    _legendItem("Late", _statusColor("Late"), scheme),
+
+                    _legendItem("Absent", _statusColor("Absent"), scheme),
+
+                    _legendItem("Holiday", _statusColor("Holiday"), scheme),
+
+                    _legendItem("On-Leave", _statusColor("On-Leave"), scheme),
                   ],
                 ),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+//////////////////////////////////////////////////////////////
+
+class _EmployeeHeader extends StatelessWidget {
+  final TeamEmployee employee;
+
+  const _EmployeeHeader({required this.employee});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: scheme.primaryContainer,
+            child: Text(
+              employee.name.isNotEmpty ? employee.name[0].toUpperCase() : "?",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                employee.name,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurface,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                employee.employeeId,
+                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

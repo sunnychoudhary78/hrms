@@ -52,7 +52,8 @@ class LeaveBalanceTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    available.toStringAsFixed(0),
+                    formatDays(available),
+
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -124,11 +125,19 @@ class _MetaText extends StatelessWidget {
             style: TextStyle(color: scheme.onSurfaceVariant),
           ),
           TextSpan(
-            text: value.toStringAsFixed(0),
+            text: formatDays(value),
+
             style: TextStyle(fontWeight: FontWeight.w600, color: color),
           ),
         ],
       ),
     );
   }
+}
+
+String formatDays(double value) {
+  if (value % 1 == 0) {
+    return value.toStringAsFixed(0); // whole number
+  }
+  return value.toStringAsFixed(1); // decimal like 0.5
 }

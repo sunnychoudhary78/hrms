@@ -48,6 +48,44 @@ class NotificationNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
       rethrow;
     }
   }
+
+  /// 🗑️ Delete single notification (Optimistic update)
+  Future<void> deleteNotification(String id) async {
+    final api = ref.read(notificationApiServiceProvider);
+
+    final currentList = state.value ?? [];
+
+    // 1️⃣ Optimistic update (remove immediately from UI)
+    state = AsyncData(currentList.where((n) => n['id'] != id).toList());
+
+    try {
+      // 2️⃣ Backend call
+      await api.deleteNotifications([id]);
+    } catch (e) {
+      // 3️⃣ Rollback if failed
+      state = AsyncData(currentList);
+      rethrow;
+    }
+  }
+
+  /// 🗑️ Delete multiple notifications
+  Future<void> deleteMultipleNotifications(List<String> ids) async {
+    final api = ref.read(notificationApiServiceProvider);
+
+    final currentList = state.value ?? [];
+
+    // Optimistic update
+    state = AsyncData(
+      currentList.where((n) => !ids.contains(n['id'])).toList(),
+    );
+
+    try {
+      await api.deleteNotifications(ids);
+    } catch (e) {
+      state = AsyncData(currentList);
+      rethrow;
+    }
+  }
 }
 
 /// 🔴 Unread Count Provider (Derived)

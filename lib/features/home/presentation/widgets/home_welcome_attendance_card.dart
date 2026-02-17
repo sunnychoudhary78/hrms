@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lms/core/providers/global_loading_provider.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/providers/attendance_selectors.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/providers/mark_attendance_provider.dart';
 
@@ -120,33 +119,33 @@ class HomeWelcomeAttendanceCard extends ConsumerWidget {
                     ),
                     label: Text(isCheckedIn ? "Punch Out" : "Punch In"),
                     onPressed: () async {
-                      final loader = ref.read(globalLoadingProvider.notifier);
-
                       try {
-                        loader.show();
-
                         if (isCheckedIn) {
                           await ref
                               .read(markAttendanceProvider.notifier)
-                              .punchOut();
+                              .punchOut(context);
                         } else {
                           await ref
                               .read(markAttendanceProvider.notifier)
-                              .punchIn();
+                              .punchIn(context);
                         }
-                      } finally {
-                        loader.hide();
+                      } catch (e) {
+                        if (!context.mounted) return;
+
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(e.toString())));
                       }
                     },
                   ),
                 ],
               ),
 
-              if (isCheckedIn && activeSession?.checkInTime != null)
+              if (isCheckedIn)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
                   child: Text(
-                    "Checked in at ${_fmt(activeSession!.checkInTime!)}",
+                    "Checked in at ${_fmt(activeSession.checkInTime)}",
                     style: TextStyle(color: scheme.onPrimary, fontSize: 13),
                   ),
                 ),

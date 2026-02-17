@@ -6,6 +6,7 @@ class LiveClockCard extends StatelessWidget {
   final double progress;
   final TimeOfDay? shiftStart;
   final TimeOfDay? shiftEnd;
+  final bool isCheckedIn;
 
   const LiveClockCard({
     super.key,
@@ -13,6 +14,7 @@ class LiveClockCard extends StatelessWidget {
     required this.progress,
     required this.shiftStart,
     required this.shiftEnd,
+    required this.isCheckedIn,
   });
 
   @override
@@ -77,9 +79,8 @@ class LiveClockCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          workingTime == "00:00"
-                              ? "Not punched in"
-                              : "Working hours",
+                          isCheckedIn ? "Working hours" : "Not punched in",
+
                           style: TextStyle(
                             fontSize: arcWidth * 0.07,
                             color: scheme.onSurfaceVariant,

@@ -7,7 +7,9 @@ import 'package:lms/core/providers/app_restart_provider.dart';
 import 'package:lms/core/providers/global_loading_provider.dart';
 import 'package:lms/core/theme/app_theme_provider.dart';
 import 'package:lms/core/theme/theme_mode_provider.dart';
+import 'package:lms/shared/widgets/global_error.dart';
 import 'package:lms/shared/widgets/global_loader.dart';
+import 'package:lms/shared/widgets/global_sucess.dart';
 import 'app/app_root.dart';
 
 void main() async {
@@ -73,13 +75,20 @@ class MyApp extends ConsumerWidget {
       builder: (context, child) {
         return Consumer(
           builder: (context, ref, _) {
-            final loadingState = ref.watch(globalLoadingProvider);
+            final overlay = ref.watch(globalLoadingProvider);
 
             return Stack(
               children: [
                 child!,
-                if (loadingState.isLoading)
-                  GlobalLoader(message: loadingState.message),
+
+                /// Loading
+                if (overlay.isLoading) GlobalLoader(message: overlay.message),
+
+                /// Success (placeholder for now)
+                if (overlay.isSuccess) GlobalSuccess(message: overlay.message),
+
+                /// Error (placeholder for now)
+                if (overlay.isError) GlobalError(message: overlay.message),
               ],
             );
           },
