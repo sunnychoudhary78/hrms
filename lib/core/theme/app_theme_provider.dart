@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AppThemeNotifier extends Notifier<Color> {
   static const _key = 'app_primary_color';
-  Color defaultAppColor = Colors.indigo;
+  Color defaultAppColor = const Color(0xFF4F46E5);
 
   @override
   Color build() {

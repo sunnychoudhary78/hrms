@@ -2,38 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:lms/app/app_routes.dart';
-import 'package:lms/core/providers/app_restart_provider.dart';
+import 'package:lms/app/app_root.dart';
 import 'package:lms/core/providers/global_loading_provider.dart';
+
 import 'package:lms/core/theme/app_theme_provider.dart';
 import 'package:lms/core/theme/theme_mode_provider.dart';
+
 import 'package:lms/shared/widgets/global_error.dart';
 import 'package:lms/shared/widgets/global_loader.dart';
 import 'package:lms/shared/widgets/global_sucess.dart';
-import 'app/app_root.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(
-    const ProviderScope(
-      child: Root(), // 🔥 ProviderScope must wrap everything
-    ),
-  );
+  runApp(const Root());
 }
 
-class Root extends ConsumerWidget {
+/// ✅ ROOT is now StatefulWidget (NOT ConsumerWidget)
+class Root extends StatefulWidget {
   const Root({super.key});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final restartKey = ref.watch(appRestartProvider);
+  static final GlobalKey<_RootState> rootKey = GlobalKey<_RootState>();
 
-    return KeyedSubtree(
-      key: ValueKey(restartKey), // 🔥 This forces full rebuild
-      child: const MyApp(),
-    );
+  @override
+  State<Root> createState() => _RootState();
+
+  /// Call this to restart app
+  static void restartApp() {
+    rootKey.currentState?.restart();
+  }
+}
+
+class _RootState extends State<Root> {
+  Key key = UniqueKey();
+
+  void restart() {
+    setState(() {
+      key = UniqueKey();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    /// ✅ ProviderScope recreated when key changes
+    return ProviderScope(key: key, child: const MyApp());
   }
 }
 
@@ -47,6 +63,7 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+
       themeMode: themeMode,
 
       theme: ThemeData(
@@ -70,6 +87,7 @@ class MyApp extends ConsumerWidget {
       ),
 
       home: const AppRoot(),
+
       routes: AppRoutes.routes,
 
       builder: (context, child) {
@@ -81,13 +99,10 @@ class MyApp extends ConsumerWidget {
               children: [
                 child!,
 
-                /// Loading
                 if (overlay.isLoading) GlobalLoader(message: overlay.message),
 
-                /// Success (placeholder for now)
                 if (overlay.isSuccess) GlobalSuccess(message: overlay.message),
 
-                /// Error (placeholder for now)
                 if (overlay.isError) GlobalError(message: overlay.message),
               ],
             );

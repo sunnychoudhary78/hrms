@@ -52,19 +52,28 @@ class _AppRootState extends ConsumerState<AppRoot> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // ⏳ Auth Loading
-    if (authState.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final isLoggedIn = authState.profile != null;
+
+    if (isLoggedIn) {
+      _initPushIfNeeded();
     }
 
-    // ❌ Not logged in
-    if (authState.profile == null) {
-      return const LoginScreen();
-    }
+    return Stack(
+      children: [
+        /// Keep both screens alive
+        IndexedStack(
+          index: isLoggedIn ? 1 : 0,
+          children: const [LoginScreen(), HomeScreen()],
+        ),
 
-    // ✅ Logged in
-    _initPushIfNeeded();
-    return const HomeScreen();
+        /// Loading overlay (does NOT destroy LoginScreen)
+        if (authState.isLoading)
+          const Scaffold(
+            backgroundColor: Colors.black26,
+            body: Center(child: CircularProgressIndicator()),
+          ),
+      ],
+    );
   }
 
   // ─────────────────────────────────────────────

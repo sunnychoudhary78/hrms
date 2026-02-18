@@ -215,7 +215,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
               /// DETAILS CARD
               Transform.translate(
-                offset: const Offset(0, -150),
+                offset: const Offset(0, -100),
 
                 child: ProfileDetailsCard(details: details),
               ),

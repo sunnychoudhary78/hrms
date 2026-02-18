@@ -1,10 +1,13 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:lms/features/attendance/mark_attendance/presentation/providers/attendance_selectors.dart';
 import 'package:lms/features/attendance/mark_attendance/presentation/providers/mark_attendance_provider.dart';
 
-class HomeWelcomeAttendanceCard extends ConsumerWidget {
+class HomeWelcomeAttendanceCard extends ConsumerStatefulWidget {
   final String name;
   final String role;
   final String? imageUrl;
@@ -17,171 +20,302 @@ class HomeWelcomeAttendanceCard extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final attendanceAsync = ref.watch(markAttendanceProvider);
+  ConsumerState<HomeWelcomeAttendanceCard> createState() =>
+      _HomeWelcomeAttendanceCardState();
+}
 
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? 'Good morning'
-        : hour < 17
-        ? 'Good afternoon'
-        : 'Good evening';
+class _HomeWelcomeAttendanceCardState
+    extends ConsumerState<HomeWelcomeAttendanceCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shineController;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          colors: [scheme.primary, scheme.primaryContainer],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: attendanceAsync.when(
-        loading: () => const SizedBox(height: 120),
-        error: (_, __) => const SizedBox(height: 120),
-        data: (sessions) {
-          final activeSession = ref.watch(activeSessionProvider(sessions));
+  @override
+  void initState() {
+    super.initState();
 
-          final bool isCheckedIn =
-              activeSession != null && activeSession.checkOutTime == null;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// TOP ROW
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          greeting,
-                          style: TextStyle(
-                            color: scheme.onPrimary.withOpacity(.75),
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          name,
-                          style: TextStyle(
-                            color: scheme.onPrimary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          role,
-                          style: TextStyle(
-                            color: scheme.onPrimary.withOpacity(.75),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _Avatar(name: name, imageUrl: imageUrl),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              /// STATUS + ACTION
-              Row(
-                children: [
-                  _StatusChip(
-                    text: isCheckedIn ? "Checked in" : "Not checked in",
-                    color: isCheckedIn ? Colors.green : Colors.orange,
-                  ),
-
-                  const Spacer(),
-
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isCheckedIn
-                          ? scheme.error
-                          : scheme.onPrimary,
-                      foregroundColor: isCheckedIn
-                          ? scheme.onError
-                          : scheme.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    icon: Icon(
-                      isCheckedIn ? Icons.logout_rounded : Icons.fingerprint,
-                      size: 18,
-                    ),
-                    label: Text(isCheckedIn ? "Punch Out" : "Punch In"),
-                    onPressed: () async {
-                      try {
-                        if (isCheckedIn) {
-                          await ref
-                              .read(markAttendanceProvider.notifier)
-                              .punchOut(context);
-                        } else {
-                          await ref
-                              .read(markAttendanceProvider.notifier)
-                              .punchIn(context);
-                        }
-                      } catch (e) {
-                        if (!context.mounted) return;
-
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(e.toString())));
-                      }
-                    },
-                  ),
-                ],
-              ),
-
-              if (isCheckedIn)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    "Checked in at ${_fmt(activeSession.checkInTime)}",
-                    style: TextStyle(color: scheme.onPrimary, fontSize: 13),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+    /// Shine animation runs ONLY once
+    _shineController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _shineController.forward();
+      }
+    });
   }
 
-  String _fmt(DateTime t) {
-    return DateFormat('hh:mm a').format(t.toLocal());
+  @override
+  void dispose() {
+    _shineController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final attendanceAsync = ref.watch(markAttendanceProvider);
+    final greeting = _greeting();
+
+    return AnimatedBuilder(
+          animation: _shineController,
+          builder: (context, child) {
+            /// Floating animation
+            final floatOffset =
+                4 *
+                (0.5 -
+                    Curves.easeInOut.transform(
+                      _shineController.value.clamp(0, 1),
+                    ));
+
+            return Transform.translate(
+              offset: Offset(0, floatOffset),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Stack(
+                  children: [
+                    /// GLASS BASE
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+
+                          /// Glass background
+                          color: scheme.surface.withOpacity(0.55),
+
+                          /// Glass border
+                          border: Border.all(
+                            color: scheme.outline.withOpacity(0.2),
+                            width: 1.2,
+                          ),
+
+                          /// Premium shadow
+                          boxShadow: [
+                            BoxShadow(
+                              color: scheme.shadow.withOpacity(0.15),
+                              blurRadius: 30,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+
+                        child: attendanceAsync.when(
+                          loading: () => const SizedBox(height: 130),
+                          error: (_, __) => const SizedBox(height: 130),
+                          data: (sessions) {
+                            final activeSession = ref.watch(
+                              activeSessionProvider(sessions),
+                            );
+
+                            final isCheckedIn =
+                                activeSession != null &&
+                                activeSession.checkOutTime == null;
+
+                            final statusBg = isCheckedIn
+                                ? scheme.tertiaryContainer
+                                : scheme.secondaryContainer;
+
+                            final statusFg = isCheckedIn
+                                ? scheme.onTertiaryContainer
+                                : scheme.onSecondaryContainer;
+
+                            final buttonBg = scheme.error;
+                            final buttonFg = scheme.onError;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// HEADER
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            greeting,
+                                            style: TextStyle(
+                                              color: scheme.onSurfaceVariant,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            widget.name,
+                                            style: TextStyle(
+                                              color: scheme.onSurface,
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -.3,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            widget.role,
+                                            style: TextStyle(
+                                              color: scheme.onSurfaceVariant,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    _Avatar(
+                                      name: widget.name,
+                                      imageUrl: widget.imageUrl,
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                /// STATUS + BUTTON
+                                Row(
+                                  children: [
+                                    _StatusChip(
+                                      text: isCheckedIn
+                                          ? "Checked in"
+                                          : "Not checked in",
+                                      bg: statusBg,
+                                      fg: statusFg,
+                                    ),
+                                    const Spacer(),
+                                    FilledButton.icon(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: buttonBg,
+                                        foregroundColor: buttonFg,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 18,
+                                          vertical: 10,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
+                                        ),
+                                      ),
+                                      icon: Icon(
+                                        isCheckedIn
+                                            ? Icons.logout_rounded
+                                            : Icons.fingerprint,
+                                        size: 18,
+                                      ),
+                                      label: Text(
+                                        isCheckedIn ? "Punch Out" : "Punch In",
+                                      ),
+                                      onPressed: () async {
+                                        if (isCheckedIn) {
+                                          await ref
+                                              .read(
+                                                markAttendanceProvider.notifier,
+                                              )
+                                              .punchOut(context);
+                                        } else {
+                                          await ref
+                                              .read(
+                                                markAttendanceProvider.notifier,
+                                              )
+                                              .punchIn(context);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+
+                                if (isCheckedIn)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 10),
+                                    child: Text(
+                                      "Checked in at ${_fmt(activeSession.checkInTime)}",
+                                      style: TextStyle(
+                                        color: scheme.onSurfaceVariant,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+
+                    /// ONE-TIME SHINE EFFECT
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 300),
+                          opacity: _shineController.isCompleted ? 0 : 1,
+                          child: Transform.translate(
+                            offset: Offset(
+                              350 * _shineController.value - 175,
+                              0,
+                            ),
+                            child: Container(
+                              width: 120,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.white.withOpacity(.25),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0, .5, 1],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        )
+        .animate()
+        .fadeIn(duration: 600.ms)
+        .scale(
+          begin: const Offset(.96, .96),
+          end: const Offset(1, 1),
+          curve: Curves.easeOutCubic,
+        );
+  }
+
+  static String _fmt(DateTime t) => DateFormat('hh:mm a').format(t.toLocal());
+
+  static String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
   }
 }
 
 class _StatusChip extends StatelessWidget {
   final String text;
-  final Color color;
+  final Color bg;
+  final Color fg;
 
-  const _StatusChip({required this.text, required this.color});
+  const _StatusChip({required this.text, required this.bg, required this.fg});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.18),
+        color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -199,7 +333,7 @@ class _Avatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: 28,
-      backgroundColor: scheme.surface,
+      backgroundColor: scheme.surface.withOpacity(.6),
       backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
           ? NetworkImage(imageUrl!)
           : null,

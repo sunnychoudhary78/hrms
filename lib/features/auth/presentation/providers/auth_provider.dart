@@ -1,10 +1,8 @@
 import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/core/network/api_constants.dart';
-import 'package:lms/core/providers/app_restart_provider.dart';
 import 'package:lms/core/providers/network_providers.dart';
-
+import 'package:lms/main.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../data/auth_api_service.dart';
 import 'auth_state.dart';
@@ -197,8 +195,8 @@ class AuthNotifier extends Notifier<AuthState> {
 
     state = const AuthState();
 
-    // 🔥 VERY IMPORTANT — RESET ENTIRE APP STATE
-    ref.read(appRestartProvider.notifier).restart();
+    /// 🔥 Proper full Riverpod reset
+    Root.restartApp();
   }
 
   // ─────────────────────────────────────────────

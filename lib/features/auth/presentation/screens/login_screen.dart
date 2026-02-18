@@ -11,8 +11,22 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   bool _obscurePassword = true;
 
@@ -148,24 +162,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             .fadeIn(delay: 400.ms)
                             .slideX(begin: 0.1, end: 0),
 
-                        const SizedBox(height: 32),
-
-                        /// Forgot Password
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, "/forgot-password");
-                            },
-                            child: Text(
-                              "Forgot Password?",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: scheme.primary,
-                              ),
-                            ),
-                          ),
-                        ),
+                        SizedBox(height: 25),
 
                         /// Login Button
                         SizedBox(
@@ -208,6 +205,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               end: const Offset(1, 1),
                               curve: Curves.easeOutBack,
                             ),
+                        const SizedBox(height: 32),
+
+                        /// Forgot Password
+                        Align(
+                          alignment: Alignment.center,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, "/forgot-password");
+                            },
+                            child: Text(
+                              "Forgot Password?",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: scheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   )
@@ -235,7 +250,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authProvider.notifier).login(emailOrEmpId, password);
 
-      Navigator.pushReplacementNamed(context, "/home");
+      // ✅ Do not navigate manually
+      // AppRoot will rebuild and show HomeScreen automatically
     } catch (_) {
       _showSnack("Login failed. Check credentials");
     }
