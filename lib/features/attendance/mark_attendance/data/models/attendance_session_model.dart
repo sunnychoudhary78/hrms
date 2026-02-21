@@ -3,9 +3,8 @@ class AttendanceSession {
   final DateTime checkInTime;
   final DateTime? checkOutTime;
 
-  /// ✅ NEW (from API)
-  final String date; // yyyy-MM-dd
-  final int? durationMinutes;
+  final String date;
+  final int durationMinutes;
 
   final String source;
   final bool remoteRequested;
@@ -22,39 +21,89 @@ class AttendanceSession {
     this.remoteReason,
   });
 
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+
+    if (v is int) return v;
+
+    if (v is double) return v.toInt();
+
+    if (v is String) return int.tryParse(v) ?? 0;
+
+    if (v is Map<String, dynamic>) {
+      if (v.containsKey('minutes')) return _asInt(v['minutes']);
+      if (v.containsKey('value')) return _asInt(v['value']);
+      if (v.containsKey('total')) return _asInt(v['total']);
+    }
+
+    return 0;
+  }
+
+  static String _asString(dynamic v) {
+    if (v == null) return '';
+
+    if (v is String) return v;
+
+    if (v is Map<String, dynamic>) {
+      if (v.containsKey('date')) return v['date'].toString();
+      if (v.containsKey('value')) return v['value'].toString();
+    }
+
+    return v.toString();
+  }
+
   factory AttendanceSession.fromJson(Map<String, dynamic> json) {
+    print("📦 RAW ATTENDANCE SESSION:");
+    print(json);
+
+    DateTime parseDate(dynamic value) {
+      if (value == null) return DateTime.now();
+
+      if (value is String) {
+        return DateTime.parse(value).toLocal();
+      }
+
+      if (value is Map<String, dynamic>) {
+        if (value.containsKey('value')) {
+          return DateTime.parse(value['value'].toString()).toLocal();
+        }
+      }
+
+      return DateTime.parse(value.toString()).toLocal();
+    }
+
+    DateTime? parseNullableDate(dynamic value) {
+      if (value == null) return null;
+
+      if (value is String) {
+        return DateTime.parse(value).toLocal();
+      }
+
+      if (value is Map<String, dynamic>) {
+        if (value.containsKey('value')) {
+          return DateTime.parse(value['value'].toString()).toLocal();
+        }
+      }
+
+      return DateTime.parse(value.toString()).toLocal();
+    }
+
     return AttendanceSession(
       id: json['id']?.toString() ?? '',
 
-      // 🔥 FIXED (convert to local time)
-      checkInTime: DateTime.parse(json['checkInTime']).toLocal(),
+      checkInTime: parseDate(json['checkInTime']),
 
-      checkOutTime: json['checkOutTime'] != null
-          ? DateTime.parse(json['checkOutTime']).toLocal()
-          : null,
+      checkOutTime: parseNullableDate(json['checkOutTime']),
 
-      date: json['date'],
-      durationMinutes: json['durationMinutes'],
+      date: _asString(json['date']),
 
-      source: json['source'] ?? '',
-      remoteRequested: json['remoteRequested'] ?? false,
-      remoteReason: json['remoteReason'],
+      durationMinutes: _asInt(json['durationMinutes']),
+
+      source: json['source']?.toString() ?? '',
+
+      remoteRequested: json['remoteRequested'] == true,
+
+      remoteReason: json['remoteReason']?.toString(),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'checkInTime': checkInTime.toIso8601String(),
-      'checkOutTime': checkOutTime?.toIso8601String(),
-
-      // ✅ ADDED
-      'date': date,
-      'durationMinutes': durationMinutes,
-
-      'source': source,
-      'remoteRequested': remoteRequested,
-      'remoteReason': remoteReason,
-    };
   }
 }

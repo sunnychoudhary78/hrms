@@ -28,6 +28,34 @@ class AttendanceParams {
 }
 
 //////////////////////////////////////////////////////////////
+// SAFE DATE NORMALIZER
+//////////////////////////////////////////////////////////////
+
+String _normalizeDate(dynamic rawDate) {
+  try {
+    if (rawDate == null) return '';
+
+    // Already correct
+    if (rawDate is String) return rawDate;
+
+    // Backend sends object: { date: "2026-02-11", halfDayPart: null }
+    if (rawDate is Map<String, dynamic>) {
+      if (rawDate.containsKey('date')) {
+        return rawDate['date']?.toString() ?? '';
+      }
+
+      if (rawDate.containsKey('value')) {
+        return rawDate['value']?.toString() ?? '';
+      }
+    }
+
+    return rawDate.toString();
+  } catch (_) {
+    return '';
+  }
+}
+
+//////////////////////////////////////////////////////////////
 // PROVIDER
 //////////////////////////////////////////////////////////////
 
@@ -36,52 +64,82 @@ final employeeAttendanceProvider =
       ref,
       params,
     ) async {
-      final api = ref.read(apiServiceProvider);
+      try {
+        final api = ref.read(apiServiceProvider);
 
-      final firstDay = DateTime(params.month.year, params.month.month, 1);
-      final lastDay = DateTime(params.month.year, params.month.month + 1, 0);
+        //////////////////////////////////////////////////////////
+        // DATE RANGE
+        //////////////////////////////////////////////////////////
 
-      final from = DateFormat('yyyy-MM-dd').format(firstDay);
-      final to = DateFormat('yyyy-MM-dd').format(lastDay);
+        final firstDay = DateTime(params.month.year, params.month.month, 1);
 
-      final response = await api.get(
-        'attendance',
-        queryParams: {'userId': params.userId, 'from': from, 'to': to},
-      );
+        final lastDay = DateTime(params.month.year, params.month.month + 1, 0);
 
-      final aggregates = response['aggregates'] ?? [];
-      final sessions = response['sessions'] ?? [];
+        final from = DateFormat('yyyy-MM-dd').format(firstDay);
+        final to = DateFormat('yyyy-MM-dd').format(lastDay);
 
-      //////////////////////////////////////////////////////////
-      // GROUP SESSIONS BY DATE
-      //////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////
+        // API CALL
+        //////////////////////////////////////////////////////////
 
-      final Map<String, List> sessionsByDate = {};
-
-      for (final session in sessions) {
-        final date = session['date'];
-        if (date == null) continue;
-
-        sessionsByDate.putIfAbsent(date, () => []);
-        sessionsByDate[date]!.add(session);
-      }
-
-      //////////////////////////////////////////////////////////
-      // BUILD FINAL MAP
-      //////////////////////////////////////////////////////////
-
-      final Map<String, AttendanceDayData> result = {};
-
-      for (final aggregate in aggregates) {
-        final date = aggregate['date'];
-
-        final daySessions = sessionsByDate[date] ?? [];
-
-        result[date] = AttendanceDayData.fromJson(
-          aggregate: aggregate,
-          sessionsJson: daySessions,
+        final response = await api.get(
+          'attendance',
+          queryParams: {'userId': params.userId, 'from': from, 'to': to},
         );
-      }
 
-      return result;
+        final aggregates = (response['aggregates'] as List?) ?? const [];
+
+        final sessions = (response['sessions'] as List?) ?? const [];
+
+        //////////////////////////////////////////////////////////
+        // GROUP SESSIONS BY DATE
+        //////////////////////////////////////////////////////////
+
+        final Map<String, List> sessionsByDate = {};
+
+        for (final session in sessions) {
+          try {
+            final date = _normalizeDate(session['date']);
+
+            if (date.isEmpty) continue;
+
+            sessionsByDate.putIfAbsent(date, () => []);
+
+            sessionsByDate[date]!.add(session);
+          } catch (_) {
+            // Skip bad session safely
+          }
+        }
+
+        //////////////////////////////////////////////////////////
+        // BUILD FINAL RESULT MAP
+        //////////////////////////////////////////////////////////
+
+        final Map<String, AttendanceDayData> result = {};
+
+        for (final aggregate in aggregates) {
+          try {
+            final date = _normalizeDate(aggregate['date']);
+
+            if (date.isEmpty) continue;
+
+            final daySessions = sessionsByDate[date] ?? const [];
+
+            result[date] = AttendanceDayData.fromJson(
+              aggregate: {
+                ...aggregate,
+                'date': date, // normalized safe date
+              },
+              sessionsJson: daySessions,
+            );
+          } catch (_) {
+            // Skip bad aggregate safely
+          }
+        }
+
+        return result;
+      } catch (_) {
+        // Never crash UI
+        return {};
+      }
     });

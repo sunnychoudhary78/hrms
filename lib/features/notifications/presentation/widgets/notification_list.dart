@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:lms/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lms/features/dashboard/presentation/screens/employee_attendence_calender_screen.dart';
 import 'package:lms/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:lms/features/notifications/presentation/widgets/notification_tile.dart';
+
+import 'package:lms/features/dashboard/data/models/team_dashboard_model.dart';
 
 class NotificationList extends ConsumerWidget {
   final List<dynamic> notifications;
@@ -10,6 +15,24 @@ class NotificationList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    /// ✅ GET AUTH STATE
+    final authState = ref.watch(authProvider);
+
+    /// ✅ GET PERMISSIONS LIST
+    final permissions = authState.permissions;
+
+    /// ✅ DEBUG PRINT PERMISSIONS
+    print("========= USER PERMISSIONS =========");
+    print(permissions);
+    print("====================================");
+
+    /// ✅ CHECK IF USER IS MANAGER (same logic as drawer)
+    final bool canViewTeamAttendance = permissions.contains(
+      'leave.request.approve',
+    );
+
+    print("Can view team attendance: $canViewTeamAttendance");
+
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       itemCount: notifications.length,
@@ -29,7 +52,7 @@ class NotificationList extends ConsumerWidget {
 
           direction: DismissDirection.endToStart,
 
-          // red delete background
+          /// DELETE BACKGROUND
           background: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -40,7 +63,7 @@ class NotificationList extends ConsumerWidget {
             child: const Icon(Icons.delete, color: Colors.white, size: 26),
           ),
 
-          // confirmation dialog
+          /// CONFIRM DELETE
           confirmDismiss: (_) async {
             final confirm = await showDialog<bool>(
               context: context,
@@ -70,21 +93,74 @@ class NotificationList extends ConsumerWidget {
             return confirm ?? false;
           },
 
-          // delete action
+          /// DELETE ACTION
           onDismissed: (_) {
             ref.read(notificationProvider.notifier).deleteNotification(id);
           },
 
           child: NotificationTile(
             icon: _iconForType(n["type"]),
+
             title: n["title"] ?? "Notification",
+
             subtitle: n["message"] ?? "",
+
             time: _formatTime(createdAt),
+
             isUnread: isUnread,
+
+            /// ✅ TAP HANDLER WITH FULL DEBUG
             onTap: () {
+              print("========== NOTIFICATION TAP ==========");
+              print("Notification ID: $id");
+              print("Notification Type: ${n["type"]}");
+              print("Sender Raw: ${n["sender"]}");
+              print("======================================");
+
+              /// ALWAYS mark as read
               if (isUnread) {
                 ref.read(notificationProvider.notifier).markAsRead(id);
               }
+
+              /// BLOCK employees
+              if (!canViewTeamAttendance) {
+                print("Blocked: User has no permission");
+                return;
+              }
+
+              final senderRaw = n["sender"];
+
+              /// ignore if sender missing
+              if (senderRaw == null) {
+                print("Sender is null → ignoring");
+                return;
+              }
+
+              /// ignore if wrong type
+              if (senderRaw is! Map<String, dynamic>) {
+                print("Sender is not Map → ignoring");
+                print("Actual type: ${senderRaw.runtimeType}");
+                return;
+              }
+
+              print("Sender ID: ${senderRaw["id"]}");
+              print("Sender Name: ${senderRaw["name"]}");
+
+              /// CREATE EMPLOYEE OBJECT
+              final employee = TeamEmployee.fromNotification(senderRaw);
+
+              print("Employee created:");
+              print("userId: ${employee.userId}");
+              print("name: ${employee.name}");
+
+              /// NAVIGATE
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      EmployeeAttendanceCalendarScreen(employee: employee),
+                ),
+              );
             },
           ),
         );
@@ -92,29 +168,36 @@ class NotificationList extends ConsumerWidget {
     );
   }
 
-  // 🧠 backend type → icon
+  /// ICON RESOLVER
   IconData _iconForType(String? type) {
     switch (type) {
       case 'attendance_auto_closed':
         return Icons.timer_off;
-      case 'correction_rejected':
-        return Icons.cancel;
-      case 'leave_request_approved':
-        return Icons.check_circle;
-      case 'leave_revoked':
-        return Icons.undo;
+
+      case 'attendance_checkin':
+        return Icons.login;
+
+      case 'attendance_checkout':
+        return Icons.logout;
+
+      case 'LEAVE_REQUEST':
+        return Icons.event_note;
+
       default:
         return Icons.notifications;
     }
   }
 
-  // ⏱ time formatter (this part was already correct)
+  /// TIME FORMATTER
   String _formatTime(DateTime date) {
     final diff = DateTime.now().difference(date);
 
     if (diff.inMinutes < 1) return 'just now';
+
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+
     if (diff.inHours < 24) return '${diff.inHours}h ago';
+
     if (diff.inDays == 1) return 'Yesterday';
 
     return '${date.day}/${date.month}/${date.year}';

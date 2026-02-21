@@ -91,32 +91,76 @@ class MarkAttendanceNotifier extends AsyncNotifier<List<AttendanceSession>> {
     }
 
     try {
-      // Capture selfie
-      final File? selfie = await _selfieService.captureSelfie(context);
+      // ─────────────────────────────────────────────
+      // STEP 1: FETCH MOBILE CONFIG
+      // ─────────────────────────────────────────────
 
-      if (selfie == null) {
-        throw Exception("Selfie is required");
+      loader.showLoading("Checking requirements...");
+
+      final config = await _repo.fetchMobileConfig();
+
+      // Block if mobile attendance disabled
+      if (!config.allowMobileCheckin) {
+        throw Exception("Mobile attendance is disabled for your account");
       }
 
-      loader.showLoading("Processing selfie…");
+      // Decide requirements dynamically
+      final bool requireSelfie = isCheckIn
+          ? config.requireMobileCheckinSelfie
+          : config.requireMobileCheckoutSelfie;
 
-      loader.update("Compressing image");
+      final bool requireGPS = config.requireMobileGps;
 
-      final File compressed = await _selfieService.compressImage(selfie);
+      File? compressedFile;
+      Map<String, dynamic>? location;
 
-      final sizeKb = await compressed.length() / 1024;
+      // ─────────────────────────────────────────────
+      // STEP 2: CAPTURE SELFIE IF REQUIRED
+      // ─────────────────────────────────────────────
 
-      if (sizeKb > 500) {
-        throw Exception("Image must be less than 500KB");
+      if (requireSelfie) {
+        loader.update(
+          isCheckIn
+              ? "Capturing check-in selfie..."
+              : "Capturing check-out selfie...",
+        );
+
+        final selfieFile = await _selfieService.captureSelfie(context);
+
+        if (selfieFile == null) {
+          throw Exception("Selfie is required");
+        }
+
+        loader.update("Compressing image...");
+
+        compressedFile = await _selfieService.compressImage(selfieFile);
+
+        final sizeKb = await compressedFile.length() / 1024;
+
+        if (sizeKb > 5000) {
+          throw Exception("Image must be less than 5MB");
+        }
       }
 
-      final body = <String, dynamic>{"source": isRemote ? "remote" : "mobile"};
+      // ─────────────────────────────────────────────
+      // STEP 3: FETCH GPS IF REQUIRED
+      // ─────────────────────────────────────────────
 
-      if (!isRemote) {
-        loader.update("Fetching location");
+      if (requireGPS) {
+        loader.update("Fetching location...");
 
-        final location = await _getUserLocation();
+        location = await _getUserLocation();
+      }
 
+      // ─────────────────────────────────────────────
+      // STEP 4: BUILD REQUEST BODY
+      // ─────────────────────────────────────────────
+
+      final body = <String, dynamic>{
+        "source": "mobile", // ALWAYS mobile per backend docs
+      };
+
+      if (location != null) {
         body["location"] = location;
       }
 
@@ -128,15 +172,23 @@ class MarkAttendanceNotifier extends AsyncNotifier<List<AttendanceSession>> {
         }
       }
 
-      loader.update(isCheckIn ? "Marking check-in" : "Marking check-out");
+      // ─────────────────────────────────────────────
+      // STEP 5: SEND API REQUEST
+      // ─────────────────────────────────────────────
+
+      loader.update(isCheckIn ? "Marking check-in..." : "Marking check-out...");
 
       if (isCheckIn) {
-        await _repo.punchInMultipart(file: compressed, body: body);
+        await _repo.punchInMultipart(file: compressedFile, body: body);
       } else {
-        await _repo.punchOutMultipart(file: compressed, body: body);
+        await _repo.punchOutMultipart(file: compressedFile, body: body);
       }
 
-      loader.update("Refreshing");
+      // ─────────────────────────────────────────────
+      // STEP 6: REFRESH STATE
+      // ─────────────────────────────────────────────
+
+      loader.update("Refreshing attendance...");
 
       await refresh();
 
@@ -150,7 +202,6 @@ class MarkAttendanceNotifier extends AsyncNotifier<List<AttendanceSession>> {
       );
     } catch (e) {
       loader.showError(e.toString());
-      return;
     }
   }
 

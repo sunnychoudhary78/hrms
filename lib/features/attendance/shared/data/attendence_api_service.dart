@@ -14,6 +14,20 @@ class AttendanceApiService {
   AttendanceApiService(this.api);
 
   // ─────────────────────────────────────────────
+  // FETCH MOBILE CONFIG (NEW)
+  // ─────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> fetchMobileConfig() async {
+    debugPrint("➡️ GET ${ApiEndpoints.mobileAttendanceConfig}");
+
+    final res = await api.get(ApiEndpoints.mobileAttendanceConfig);
+
+    debugPrint("✅ MOBILE CONFIG: $res");
+
+    return res;
+  }
+
+  // ─────────────────────────────────────────────
   // FETCH ATTENDANCE
   // ─────────────────────────────────────────────
 
@@ -45,7 +59,7 @@ class AttendanceApiService {
   }
 
   // ─────────────────────────────────────────────
-  // NORMAL CHECK-IN (REMOTE ONLY)
+  // NORMAL CHECK-IN (fallback)
   // ─────────────────────────────────────────────
 
   Future<void> punchIn(Map<String, dynamic> body) async {
@@ -53,35 +67,41 @@ class AttendanceApiService {
   }
 
   // ─────────────────────────────────────────────
-  // ✅ MULTIPART SELFIE CHECK-IN (FINAL CORRECT VERSION)
+  // MULTIPART CHECK-IN (UPDATED: selfie optional)
   // ─────────────────────────────────────────────
 
   Future<void> punchInMultipart({
-    required File file,
+    File? file,
     required Map<String, dynamic> body,
   }) async {
     debugPrint("➡️ MULTIPART CHECK-IN START");
 
     final formData = FormData();
 
-    /// 1️⃣ REQUIRED: Selfie File
-    formData.files.add(
-      MapEntry(
-        "checkInSelfie",
-        await MultipartFile.fromFile(
-          file.path,
-          filename: file.path.split('/').last,
-          contentType: MediaType('image', 'jpeg'),
+    /// 1️⃣ OPTIONAL: Selfie File
+    if (file != null) {
+      debugPrint("📷 CHECK-IN SELFIE ATTACHED");
+
+      formData.files.add(
+        MapEntry(
+          "checkInSelfie",
+          await MultipartFile.fromFile(
+            file.path,
+            filename: file.path.split('/').last,
+            contentType: MediaType('image', 'jpeg'),
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      debugPrint("📷 CHECK-IN SELFIE NOT REQUIRED");
+    }
 
     /// 2️⃣ REQUIRED: source
     final source = body["source"] ?? "mobile";
 
     formData.fields.add(MapEntry("source", source.toString()));
 
-    /// 3️⃣ OPTIONAL: location (JSON string)
+    /// 3️⃣ OPTIONAL: location
     if (body["location"] != null) {
       final loc = body["location"];
 
@@ -110,14 +130,13 @@ class AttendanceApiService {
       );
     }
 
-    /// SEND REQUEST
     await api.postMultipart(ApiEndpoints.checkIn, formData);
 
     debugPrint("✅ CHECK-IN SUCCESS");
   }
 
   // ─────────────────────────────────────────────
-  // CHECK OUT
+  // NORMAL CHECK-OUT
   // ─────────────────────────────────────────────
 
   Future<void> punchOut(Map<String, dynamic> body) async {
@@ -125,35 +144,41 @@ class AttendanceApiService {
   }
 
   // ─────────────────────────────────────────────
-  // ✅ MULTIPART SELFIE CHECK-OUT
+  // MULTIPART CHECK-OUT (UPDATED: selfie optional)
   // ─────────────────────────────────────────────
 
   Future<void> punchOutMultipart({
-    required File file,
+    File? file,
     required Map<String, dynamic> body,
   }) async {
     debugPrint("➡️ MULTIPART CHECK-OUT START");
 
     final formData = FormData();
 
-    /// 1️⃣ REQUIRED: Selfie File
-    formData.files.add(
-      MapEntry(
-        "checkOutSelfie",
-        await MultipartFile.fromFile(
-          file.path,
-          filename: file.path.split('/').last,
-          contentType: MediaType('image', 'jpeg'),
+    /// 1️⃣ OPTIONAL: Selfie File
+    if (file != null) {
+      debugPrint("📷 CHECK-OUT SELFIE ATTACHED");
+
+      formData.files.add(
+        MapEntry(
+          "checkOutSelfie",
+          await MultipartFile.fromFile(
+            file.path,
+            filename: file.path.split('/').last,
+            contentType: MediaType('image', 'jpeg'),
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      debugPrint("📷 CHECK-OUT SELFIE NOT REQUIRED");
+    }
 
     /// 2️⃣ REQUIRED: source
     final source = body["source"] ?? "mobile";
 
     formData.fields.add(MapEntry("source", source.toString()));
 
-    /// 3️⃣ OPTIONAL: location (ONLY for mobile)
+    /// 3️⃣ OPTIONAL: location
     if (body["location"] != null) {
       final loc = body["location"];
 
@@ -182,14 +207,13 @@ class AttendanceApiService {
       );
     }
 
-    /// SEND REQUEST
     await api.postMultipart(ApiEndpoints.checkOut, formData);
 
     debugPrint("✅ CHECK-OUT SUCCESS");
   }
 
   // ─────────────────────────────────────────────
-  // CORRECTION REQUEST
+  // CORRECTIONS
   // ─────────────────────────────────────────────
 
   Future<void> requestCorrection(Map<String, dynamic> body) async {

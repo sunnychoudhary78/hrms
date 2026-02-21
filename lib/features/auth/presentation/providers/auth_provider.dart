@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/core/network/api_constants.dart';
 import 'package:lms/core/providers/network_providers.dart';
+import 'package:lms/features/leave/presentation/providers/leave_approve_provider.dart';
+import 'package:lms/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:lms/main.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../data/auth_api_service.dart';
@@ -66,6 +68,10 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       final userModel = await _authApi.login(email, password);
       await _tokenStorage.saveJwt(userModel.token);
+
+      ref.invalidate(notificationProvider);
+      ref.invalidate(unreadCountProvider);
+      ref.invalidate(leaveApproveProvider);
 
       final profileJson = await _authApi.fetchProfile();
       final profile = Userdetails.fromJson(profileJson);
@@ -192,6 +198,10 @@ class AuthNotifier extends Notifier<AuthState> {
     }
 
     await _tokenStorage.clear();
+
+    ref.invalidate(notificationProvider);
+    ref.invalidate(unreadCountProvider);
+    ref.invalidate(leaveApproveProvider);
 
     state = const AuthState();
 

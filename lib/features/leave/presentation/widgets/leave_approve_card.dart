@@ -5,199 +5,249 @@ import 'leave_approve_actions.dart';
 
 class LeaveApproveCard extends StatefulWidget {
   final ManagerLeaveRequest request;
-  final Function(String, String?, List<String>) onApprove;
-  final Function(String, String?) onReject;
+
+  final bool isPending;
+
+  final Function(String, String?, List<Map<String, dynamic>>)? onApprove;
+
+  final Function(String, String?)? onReject;
 
   const LeaveApproveCard({
     super.key,
     required this.request,
-    required this.onApprove,
-    required this.onReject,
+    required this.isPending,
+    this.onApprove,
+    this.onReject,
   });
-
   @override
   State<LeaveApproveCard> createState() => _LeaveApproveCardState();
 }
 
-class _LeaveApproveCardState extends State<LeaveApproveCard>
-    with SingleTickerProviderStateMixin {
+class _LeaveApproveCardState extends State<LeaveApproveCard> {
   bool expanded = false;
+
+  bool get canTakeAction =>
+      widget.isPending && widget.request.status.toLowerCase() == "pending";
+
+  String formatDays(double days) {
+    if (days == days.toInt()) {
+      return days.toInt().toString();
+    }
+    return days.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
     final r = widget.request;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      margin: const EdgeInsets.only(bottom: 16),
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
         color: scheme.surface,
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            blurRadius: expanded ? 18 : 10,
-            spreadRadius: 1,
-            offset: const Offset(0, 6),
-            color: scheme.shadow.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => setState(() => expanded = !expanded),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+          /// HEADER
+          Row(
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: scheme.surfaceContainerLow,
-                    backgroundImage: r.profilePicture.isNotEmpty
-                        ? NetworkImage(r.profilePicture)
-                        : null,
-                    child: r.profilePicture.isEmpty
-                        ? Icon(
-                            Icons.person,
-                            size: 28,
-                            color: scheme.onSurfaceVariant,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 14),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          r.employeeName,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: scheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          r.leaveType,
-                          style: TextStyle(
-                            color: scheme.onSurfaceVariant,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  _statusChip(r.status),
-                ],
+              CircleAvatar(
+                radius: 24,
+                child: Text(
+                  r.employeeName.isNotEmpty ? r.employeeName[0] : "?",
+                ),
               ),
 
-              AnimatedCrossFade(
-                firstChild: const SizedBox(),
-                secondChild: Column(
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 18),
-                    Divider(color: scheme.outlineVariant),
-                    const SizedBox(height: 12),
-
-                    _infoRow(
-                      Icons.calendar_today,
-                      "Duration",
-                      "${_format(r.startDate)} → ${_format(r.endDate)}",
+                    Text(
+                      r.employeeName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    _infoRow(Icons.timelapse, "Total Days", "${r.days}"),
-                    const SizedBox(height: 8),
-                    _infoRow(Icons.notes, "Reason", r.reason),
-                    const SizedBox(height: 16),
 
-                    LeaveApproveActions(
-                      request: r,
-                      onApprove: widget.onApprove,
-                      onReject: widget.onReject,
+                    const SizedBox(height: 2),
+
+                    Text(
+                      r.leaveType,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
-                crossFadeState: expanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 250),
+              ),
+
+              _statusChip(r.status),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          /// DATE ROW (ALWAYS VISIBLE)
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: scheme.onSurfaceVariant,
+              ),
+
+              const SizedBox(width: 6),
+
+              Text(
+                "${_format(r.startDate)} → ${_format(r.endDate)}",
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+
+              const Spacer(),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  "${formatDays(r.days)} day${r.days > 1 ? 's' : ''}",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
 
-  Widget _infoRow(IconData icon, String label, String value) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-        const SizedBox(width: 10),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: TextStyle(color: scheme.onSurface, fontSize: 14),
+          /// HALF DAY INDICATOR
+          if (r.isHalfDay) ...[
+            const SizedBox(height: 6),
+            Row(
               children: [
-                TextSpan(
-                  text: "$label: ",
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                Icon(Icons.timelapse, size: 16, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Text(
+                  "Half Day (${r.halfDayPart ?? ''})",
+                  style: TextStyle(color: scheme.onSurfaceVariant),
                 ),
-                TextSpan(text: value),
+              ],
+            ),
+          ],
+
+          /// DESIGNATION / DEPARTMENT
+          if (r.designation.isNotEmpty || r.department.isNotEmpty) ...[
+            const SizedBox(height: 6),
+
+            Row(
+              children: [
+                Icon(
+                  Icons.work_outline,
+                  size: 16,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+
+                Expanded(
+                  child: Text(
+                    "${r.designation} • ${r.department}",
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 8),
+
+          /// EXPAND BUTTON
+          GestureDetector(
+            onTap: () => setState(() => expanded = !expanded),
+
+            child: Row(
+              children: [
+                Text(
+                  expanded ? "Hide details" : "View details",
+                  style: TextStyle(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Icon(expanded ? Icons.expand_less : Icons.expand_more),
               ],
             ),
           ),
-        ),
-      ],
+
+          if (expanded) ...[
+            const SizedBox(height: 12),
+
+            /// REASON
+            if (r.reason.isNotEmpty)
+              Text(
+                "Reason: ${r.reason}",
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+
+            const SizedBox(height: 12),
+
+            if (canTakeAction)
+              LeaveApproveActions(
+                request: r,
+                onApprove: widget.onApprove!,
+                onReject: widget.onReject!,
+              ),
+          ],
+        ],
+      ),
     );
   }
 
   Widget _statusChip(String status) {
-    final s = status.toLowerCase();
+    Color color = Colors.orange;
 
-    Color start = Colors.orange.shade400;
-    Color end = Colors.orange.shade600;
+    if (status.toLowerCase() == "approved") color = Colors.green;
 
-    if (s == "approved") {
-      start = Colors.green.shade400;
-      end = Colors.green.shade600;
-    } else if (s == "rejected") {
-      start = Colors.red.shade400;
-      end = Colors.red.shade600;
-    }
+    if (status.toLowerCase() == "rejected") color = Colors.red;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [start, end]),
-        borderRadius: BorderRadius.circular(30),
+        color: color,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         status,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 12),
       ),
     );
   }
 
   String _format(String date) {
-    try {
-      return DateFormat('dd MMM yyyy').format(DateTime.parse(date));
-    } catch (_) {
-      return date;
-    }
+    return DateFormat("dd MMM yyyy").format(DateTime.parse(date));
   }
 }

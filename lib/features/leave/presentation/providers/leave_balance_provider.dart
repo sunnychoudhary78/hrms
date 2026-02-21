@@ -10,8 +10,8 @@ final leaveBalanceApiProvider = Provider<LeaveBalanceApiService>((ref) {
 });
 
 final leaveBalanceProvider =
-    AsyncNotifierProvider<LeaveBalanceNotifier, List<LeaveBalance>>(
-      () => LeaveBalanceNotifier(),
+    AsyncNotifierProvider.autoDispose<LeaveBalanceNotifier, List<LeaveBalance>>(
+      LeaveBalanceNotifier.new,
     );
 
 class LeaveBalanceNotifier extends AsyncNotifier<List<LeaveBalance>> {

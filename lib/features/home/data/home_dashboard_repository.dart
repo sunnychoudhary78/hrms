@@ -20,19 +20,44 @@ class HomeDashboardRepository {
     // 1️⃣ PROFILE
     final profileJson = await authApi.fetchProfile();
 
+    print("📦 RAW PROFILE JSON:");
+    print(profileJson);
+
+    // ✅ SAFE USER NAME
     final String userName =
-        profileJson['associates_name'] ?? profileJson['name'] ?? 'User';
+        profileJson['associates_name']?.toString() ??
+        profileJson['name']?.toString() ??
+        'User';
 
-    final String designation =
-        profileJson['designation'] ??
-        profileJson['role']?['name'] ??
-        'Employee';
+    // ✅ SAFE DESIGNATION FIX (CRITICAL)
+    String designation = 'Employee';
 
-    final String? profileImageUrl = profileJson['profile_picture'] != null
-        ? ApiConstants.imageBaseUrl + profileJson['profile_picture']
-        : null;
+    final designationRaw = profileJson['designation'];
 
-    print('👤 User: $userName | $designation');
+    if (designationRaw is Map) {
+      designation = designationRaw['name']?.toString() ?? designation;
+    } else if (designationRaw != null) {
+      designation = designationRaw.toString();
+    } else if (profileJson['role'] is Map) {
+      designation = profileJson['role']['name']?.toString() ?? designation;
+    }
+
+    // ✅ SAFE PROFILE IMAGE
+    String? profileImageUrl;
+
+    final profilePictureRaw = profileJson['profile_picture'];
+
+    if (profilePictureRaw != null && profilePictureRaw.toString().isNotEmpty) {
+      profileImageUrl =
+          ApiConstants.imageBaseUrl + profilePictureRaw.toString();
+    }
+
+    print("👤 FINAL PROFILE:");
+    print("Name: $userName");
+    print("DesignationRaw: $designationRaw");
+    print("DesignationFinal: $designation");
+    print("ProfilePictureRaw: $profilePictureRaw");
+    print("ProfileImageUrl: $profileImageUrl");
 
     // 2️⃣ ATTENDANCE SUMMARY (MONTH)
     final now = DateTime.now();
@@ -73,8 +98,7 @@ class HomeDashboardRepository {
     final todayStatus = await _loadTodayAttendance();
 
     // 7️⃣ LAST 5 WORKING DAYS
-    // Office hours: 09:30 → 18:30 = 9 hours
-    const int expectedMinutesPerDay = 9 * 60; // 540
+    const int expectedMinutesPerDay = 540;
 
     print('📊 Loading last 5 days bars (expected=$expectedMinutesPerDay min)');
 
@@ -106,7 +130,10 @@ class HomeDashboardRepository {
 
     final latest = sessions.last;
 
-    print('🕘 Latest → in=${latest.checkInTime} out=${latest.checkOutTime}');
+    print(
+      '🕘 Latest → in=${latest.checkInTime} '
+      'out=${latest.checkOutTime}',
+    );
 
     return TodayAttendanceStatus(
       isCheckedIn: latest.checkOutTime == null,
@@ -140,12 +167,11 @@ class HomeDashboardRepository {
   }
 
   // ─────────────────────────────────────────────
-  // BUILD WEEKLY BARS (CAPPED + FLAGGED)
+  // BUILD WEEKLY BARS
   // ─────────────────────────────────────────────
   Future<List<WeeklyAttendanceBar>> _loadLastFiveDaysBars(
     int expectedMinutesPerDay,
   ) async {
-    // 🔥 HARD CAP (business rule)
     const int maxAllowedMinutesPerDay = 650;
 
     final now = DateTime.now();
@@ -161,6 +187,7 @@ class HomeDashboardRepository {
 
     for (final session in attendance.sessions) {
       final day = DateTime.parse(session.date);
+
       final dayKey = DateTime(day.year, day.month, day.day);
 
       int minutes = 0;
@@ -173,7 +200,10 @@ class HomeDashboardRepository {
 
       workedByDate[dayKey] = (workedByDate[dayKey] ?? 0) + minutes;
 
-      print('🧮 ${dayKey.toIso8601String().split("T").first} +$minutes min');
+      print(
+        '🧮 ${dayKey.toIso8601String().split("T").first} '
+        '+$minutes min',
+      );
     }
 
     final workingDays = _lastFiveWorkingDays();
@@ -182,12 +212,14 @@ class HomeDashboardRepository {
       final worked = workedByDate[day] ?? 0;
 
       final cappedWorked = worked.clamp(0, maxAllowedMinutesPerDay);
+
       final isCapped = worked > maxAllowedMinutesPerDay;
 
       print(
         '📊 BAR ${day.toIso8601String().split("T").first} '
         'raw=$worked capped=$cappedWorked '
-        'expected=$expectedMinutesPerDay cappedFlag=$isCapped',
+        'expected=$expectedMinutesPerDay '
+        'cappedFlag=$isCapped',
       );
 
       return WeeklyAttendanceBar(

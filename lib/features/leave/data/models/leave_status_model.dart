@@ -37,45 +37,75 @@ class LeaveStatus {
   });
 
   factory LeaveStatus.fromJson(Map<String, dynamic> json) {
-    return LeaveStatus(
-      id: json['id'] as String,
+    final leaveTypeRaw = json['leave_type'];
 
-      /// Prefer humanReadableId, fallback to refNumber
+    /// SAFE DATE EXTRACTOR FUNCTION
+    String extractDate(dynamic e) {
+      if (e == null) return '';
+
+      /// case 1: { date: "2025-12-22", halfDayPart: null }
+      if (e is Map && e['date'] is String) {
+        return e['date'].toString();
+      }
+
+      /// case 2: { date: { date: "2025-12-22", halfDayPart: null }, halfDayPart: null }
+      if (e is Map && e['date'] is Map && e['date']['date'] != null) {
+        return e['date']['date'].toString();
+      }
+
+      /// case 3: direct string
+      if (e is String) {
+        return e;
+      }
+
+      return '';
+    }
+
+    return LeaveStatus(
+      id: json['id']?.toString() ?? '',
+
       reference:
-          json['humanReadableId'] as String? ??
+          json['humanReadableId']?.toString() ??
           json['refNumber']?.toString() ??
           '-',
 
-      /// Correct key: leave_type (snake_case)
-      leaveType: json['leave_type']?['name'] as String?,
+      /// SAFE leave type parsing
+      leaveType: leaveTypeRaw is Map
+          ? leaveTypeRaw['name']?.toString()
+          : leaveTypeRaw?.toString(),
 
-      status: json['status'] as String? ?? '',
+      status: json['status']?.toString() ?? '',
 
-      startDate: json['startDate'] as String,
-      endDate: json['endDate'] as String,
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
 
-      isHalfDay: json['isHalfDay'] as bool? ?? false,
-      halfDayPart: json['halfDayPart'] as String?,
+      isHalfDay: json['isHalfDay'] == true,
+
+      halfDayPart: json['halfDayPart']?.toString(),
 
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.tryParse(json['createdAt'].toString())
           : null,
 
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
+          ? DateTime.tryParse(json['updatedAt'].toString())
           : null,
 
-      approvedDates:
-          (json['approvedDates'] as List?)
-              ?.map((e) => e['date'] as String)
-              .toList() ??
-          [],
+      /// FULLY SAFE approvedDates parsing
+      approvedDates: (json['approvedDates'] is List)
+          ? (json['approvedDates'] as List)
+                .map((e) => extractDate(e))
+                .where((e) => e.isNotEmpty)
+                .toList()
+          : [],
 
-      requestedDates:
-          (json['requestedDates'] as List?)
-              ?.map((e) => e['date'] as String)
-              .toList() ??
-          [],
+      /// FULLY SAFE requestedDates parsing
+      requestedDates: (json['requestedDates'] is List)
+          ? (json['requestedDates'] as List)
+                .map((e) => extractDate(e))
+                .where((e) => e.isNotEmpty)
+                .toList()
+          : [],
     );
   }
 }

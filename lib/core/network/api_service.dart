@@ -19,7 +19,20 @@ class ApiService {
       debugPrint("❌ POST failed | endpoint=$endpoint");
       debugPrint("❌ Status: ${e.response?.statusCode}");
       debugPrint("❌ Response: ${e.response?.data}");
-      rethrow;
+
+      String message = "Something went wrong";
+
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map;
+
+        if (data['message'] != null) {
+          message = data['message'].toString();
+        } else if (data['error'] != null) {
+          message = data['error'].toString();
+        }
+      }
+
+      throw Exception(message);
     }
   }
 
@@ -38,10 +51,23 @@ class ApiService {
       debugPrint("✅ GET success | status=${response.statusCode}");
       return _handle(response);
     } on DioException catch (e) {
-      debugPrint("❌ GET failed | endpoint=$endpoint");
+      debugPrint("❌ POST failed | endpoint=$endpoint");
       debugPrint("❌ Status: ${e.response?.statusCode}");
       debugPrint("❌ Response: ${e.response?.data}");
-      rethrow;
+
+      String message = "Something went wrong";
+
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map;
+
+        if (data['message'] != null) {
+          message = data['message'].toString();
+        } else if (data['error'] != null) {
+          message = data['error'].toString();
+        }
+      }
+
+      throw Exception(message);
     }
   }
 
@@ -55,10 +81,23 @@ class ApiService {
       debugPrint("✅ PATCH success | status=${response.statusCode}");
       return _handle(response);
     } on DioException catch (e) {
-      debugPrint("❌ PATCH failed | endpoint=$endpoint");
+      debugPrint("❌ POST failed | endpoint=$endpoint");
       debugPrint("❌ Status: ${e.response?.statusCode}");
       debugPrint("❌ Response: ${e.response?.data}");
-      rethrow;
+
+      String message = "Something went wrong";
+
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map;
+
+        if (data['message'] != null) {
+          message = data['message'].toString();
+        } else if (data['error'] != null) {
+          message = data['error'].toString();
+        }
+      }
+
+      throw Exception(message);
     }
   }
 
@@ -75,10 +114,23 @@ class ApiService {
       debugPrint("✅ MULTIPART success | status=${response.statusCode}");
       return _handle(response);
     } on DioException catch (e) {
-      debugPrint("❌ MULTIPART failed | endpoint=$endpoint");
+      debugPrint("❌ POST failed | endpoint=$endpoint");
       debugPrint("❌ Status: ${e.response?.statusCode}");
       debugPrint("❌ Response: ${e.response?.data}");
-      rethrow;
+
+      String message = "Something went wrong";
+
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map;
+
+        if (data['message'] != null) {
+          message = data['message'].toString();
+        } else if (data['error'] != null) {
+          message = data['error'].toString();
+        }
+      }
+
+      throw Exception(message);
     }
   }
 
@@ -108,10 +160,23 @@ class ApiService {
 
       return _handle(response);
     } on DioException catch (e) {
-      debugPrint("❌ DELETE failed | endpoint=$endpoint");
+      debugPrint("❌ POST failed | endpoint=$endpoint");
       debugPrint("❌ Status: ${e.response?.statusCode}");
       debugPrint("❌ Response: ${e.response?.data}");
-      rethrow;
+
+      String message = "Something went wrong";
+
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map;
+
+        if (data['message'] != null) {
+          message = data['message'].toString();
+        } else if (data['error'] != null) {
+          message = data['error'].toString();
+        }
+      }
+
+      throw Exception(message);
     }
   }
 }

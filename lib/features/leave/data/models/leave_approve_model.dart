@@ -16,6 +16,9 @@ class ManagerLeaveRequest {
   final String department;
   final String profilePicture;
 
+  /// ✅ FIXED TYPE
+  final List<Map<String, dynamic>> requestedDates;
+
   final List<String> revocationRequestedDates;
 
   ManagerLeaveRequest({
@@ -33,35 +36,57 @@ class ManagerLeaveRequest {
     required this.designation,
     required this.department,
     required this.profilePicture,
+    required this.requestedDates,
     required this.revocationRequestedDates,
   });
 
   factory ManagerLeaveRequest.fromJson(Map<String, dynamic> json) {
-    final requestedDates = (json['requestedDates'] as List?) ?? [];
+    final start = json['startDate'];
+    final end = json['endDate'];
+
+    /// ✅ PARSE REQUESTED DATES CORRECTLY
+    final requestedDatesJson = json['requestedDates'] as List? ?? [];
+
+    final requestedDates = requestedDatesJson.map<Map<String, dynamic>>((e) {
+      if (e is Map) {
+        return {"date": e['date'], "halfDayPart": e['halfDayPart']};
+      }
+
+      return {"date": e.toString(), "halfDayPart": null};
+    }).toList();
+
+    /// calculate days
+    double calculatedDays = 1;
+
+    if (requestedDates.isNotEmpty) {
+      calculatedDays = requestedDates.length.toDouble();
+    } else if (json['isHalfDay'] == true) {
+      calculatedDays = 0.5;
+    } else if (start != null && end != null) {
+      final startDate = DateTime.parse(start);
+      final endDate = DateTime.parse(end);
+      calculatedDays = endDate.difference(startDate).inDays + 1;
+    }
 
     return ManagerLeaveRequest(
       id: json['id'] ?? '',
       status: json['status'] ?? '',
-      startDate: json['startDate'] ?? '',
-      endDate: json['endDate'] ?? '',
-
-      // ✅ Backend no longer sends "days"
-      // Calculate from requestedDates
-      days: requestedDates.length.toDouble(),
-
+      startDate: start ?? '',
+      endDate: end ?? '',
+      days: calculatedDays,
       isHalfDay: json['isHalfDay'] ?? false,
       halfDayPart: json['halfDayPart'],
       reason: json['reason'] ?? '',
-
-      // ✅ Correct key: leave_type
       leaveType: json['leave_type']?['name'] ?? '',
-
-      // ✅ Correct key: user
       employeeName: json['user']?['name'] ?? '',
-      employeeCode: '', // Not available in response
-      designation: '', // Not available
-      department: '', // Not available
-      profilePicture: '', // Not available
+      employeeCode: json['user']?['employee_detail']?['payroll_code'] ?? '',
+      designation: json['user']?['employee_detail']?['designation'] ?? '',
+      department: json['user']?['employee_detail']?['department_name'] ?? '',
+      profilePicture:
+          json['user']?['employee_detail']?['profile_picture'] ?? '',
+
+      /// ✅ FIXED TYPE
+      requestedDates: requestedDates,
 
       revocationRequestedDates:
           (json['revocationRequestedDates'] as List?)

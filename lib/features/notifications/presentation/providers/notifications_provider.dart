@@ -3,9 +3,10 @@ import 'package:lms/core/providers/notification_api_providers.dart';
 
 /// 🔔 Main Notification Provider
 final notificationProvider =
-    AsyncNotifierProvider<NotificationNotifier, List<Map<String, dynamic>>>(
-      NotificationNotifier.new,
-    );
+    AsyncNotifierProvider.autoDispose<
+      NotificationNotifier,
+      List<Map<String, dynamic>>
+    >(NotificationNotifier.new);
 
 class NotificationNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
   @override

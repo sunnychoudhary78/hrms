@@ -3,7 +3,10 @@ import 'package:lms/features/leave/data/models/leave_approve_model.dart';
 
 class LeaveApproveActions extends StatelessWidget {
   final ManagerLeaveRequest request;
-  final Function(String, String?, List<String>) onApprove;
+
+  /// ✅ FIXED TYPE
+  final Function(String, String?, List<Map<String, dynamic>>) onApprove;
+
   final Function(String, String?) onReject;
 
   const LeaveApproveActions({
@@ -16,36 +19,94 @@ class LeaveApproveActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        ElevatedButton.icon(
-          icon: const Icon(Icons.check),
-          label: const Text("Approve"),
-          onPressed: () {
-            final dates = request.isHalfDay
-                ? [request.startDate]
-                : [request.startDate, request.endDate];
+        Expanded(
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.check),
+            label: const Text("Approve"),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              final confirm = await _confirm(context, "Approve Leave?");
+              if (!confirm) return;
 
-            onApprove(request.id, "Approved by Manager", dates);
-          },
+              List<Map<String, dynamic>> dates;
+
+              /// ✅ FIX: generate full range manually
+              if (request.isHalfDay) {
+                dates = [
+                  {
+                    "date": request.startDate,
+                    "halfDayPart": request.halfDayPart,
+                  },
+                ];
+              } else {
+                final start = DateTime.parse(request.startDate);
+                final end = DateTime.parse(request.endDate);
+
+                dates = [];
+
+                DateTime current = start;
+
+                while (!current.isAfter(end)) {
+                  dates.add({
+                    "date":
+                        "${current.year.toString().padLeft(4, '0')}-"
+                        "${current.month.toString().padLeft(2, '0')}-"
+                        "${current.day.toString().padLeft(2, '0')}",
+                    "halfDayPart": null,
+                  });
+
+                  current = current.add(const Duration(days: 1));
+                }
+              }
+
+              print("✅ APPROVING DATES: $dates");
+
+              await onApprove(request.id, "Approved by Manager", dates);
+            },
+          ),
         ),
-        const SizedBox(width: 8),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.close),
-          label: const Text("Reject"),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          onPressed: () async {
-            final reason = await _askReason(context);
-            if (reason != null) {
-              onReject(request.id, reason);
-            }
-          },
+
+        const SizedBox(width: 12),
+
+        Expanded(
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.close),
+            label: const Text("Reject"),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              final reason = await _askReason(context);
+              if (reason == null) return;
+
+              await onReject(request.id, reason);
+            },
+          ),
         ),
       ],
     );
   }
 
-  Future<String?> _askReason(BuildContext context) async {
+  Future<bool> _confirm(BuildContext context, String title) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(title),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("Yes"),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<String?> _askReason(BuildContext context) {
     final controller = TextEditingController();
 
     return showDialog<String>(
@@ -54,8 +115,7 @@ class LeaveApproveActions extends StatelessWidget {
         title: const Text("Reject Leave"),
         content: TextField(
           controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(hintText: "Reason..."),
+          decoration: const InputDecoration(hintText: "Enter reason"),
         ),
         actions: [
           TextButton(
@@ -64,7 +124,7 @@ class LeaveApproveActions extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text("Submit"),
+            child: const Text("Reject"),
           ),
         ],
       ),

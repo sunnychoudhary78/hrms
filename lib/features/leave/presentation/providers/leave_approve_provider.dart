@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lms/features/leave/data/models/leave_approve_model.dart';
+
 import '../../../../core/providers/network_providers.dart';
+import '../../../../core/providers/global_loading_provider.dart';
+
 import '../../data/leave_approve_api_service.dart';
 
 final leaveApproveApiProvider = Provider<LeaveApproveApiService>((ref) {
@@ -9,9 +12,10 @@ final leaveApproveApiProvider = Provider<LeaveApproveApiService>((ref) {
 });
 
 final leaveApproveProvider =
-    AsyncNotifierProvider<LeaveApproveNotifier, List<ManagerLeaveRequest>>(
-      LeaveApproveNotifier.new,
-    );
+    AsyncNotifierProvider.autoDispose<
+      LeaveApproveNotifier,
+      List<ManagerLeaveRequest>
+    >(LeaveApproveNotifier.new);
 
 class LeaveApproveNotifier extends AsyncNotifier<List<ManagerLeaveRequest>> {
   @override
@@ -30,19 +34,45 @@ class LeaveApproveNotifier extends AsyncNotifier<List<ManagerLeaveRequest>> {
     state = AsyncData(await build());
   }
 
-  Future<void> approve(String id, String? comment, List<String> dates) async {
+  /// APPROVE
+  Future<void> approve(
+    String id,
+    String? comment,
+    List<Map<String, dynamic>> dates,
+  ) async {
     final api = ref.read(leaveApproveApiProvider);
 
-    await api.approveLeave(id, comment, dates);
+    final loader = ref.read(globalLoadingProvider.notifier);
 
-    await refresh();
+    try {
+      loader.showLoading("Approving leave...");
+
+      await api.approveLeave(id, comment, dates);
+
+      await refresh();
+
+      loader.showSuccess("Leave approved successfully");
+    } catch (e) {
+      loader.showError(e.toString().replaceAll("Exception: ", ""));
+    }
   }
 
+  /// REJECT
   Future<void> reject(String id, String? comment) async {
     final api = ref.read(leaveApproveApiProvider);
 
-    await api.rejectLeave(id, comment);
+    final loader = ref.read(globalLoadingProvider.notifier);
 
-    await refresh();
+    try {
+      loader.showLoading("Rejecting leave...");
+
+      await api.rejectLeave(id, comment);
+
+      await refresh();
+
+      loader.showSuccess("Leave rejected successfully");
+    } catch (e) {
+      loader.showError(e.toString().replaceAll("Exception: ", ""));
+    }
   }
 }

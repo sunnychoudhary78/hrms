@@ -98,6 +98,20 @@ class TeamEmployee {
     );
   }
 
+  factory TeamEmployee.fromNotification(Map<String, dynamic> sender) {
+    return TeamEmployee(
+      name: sender['name'] ?? 'Employee',
+      email: sender['email'] ?? '',
+      contact: '',
+      employeeId: sender['id'] ?? '',
+      userId: sender['id'] ?? '',
+      isPresent: false,
+      managerName: '',
+      profilePicture: null,
+      attendanceSummary: null,
+    );
+  }
+
   // ==========================
   // 🔥 DERIVED METRICS
   // ==========================

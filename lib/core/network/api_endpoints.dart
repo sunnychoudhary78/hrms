@@ -17,4 +17,5 @@ class ApiEndpoints {
   static const String teamDashboard = '/employees/team-dashboard';
 
   static const String notifications = '/notifications';
+  static const mobileAttendanceConfig = "/attendance/mobile-config";
 }

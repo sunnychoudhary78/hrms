@@ -4,6 +4,7 @@ import 'package:lms/features/attendance/correction_attendance/data/models/attend
 import 'package:lms/features/attendance/mark_attendance/data/models/attendance_session_model.dart';
 import 'package:lms/features/attendance/shared/data/attendence_api_service.dart';
 import 'package:lms/features/attendance/shared/data/models/attendance_response_model.dart';
+import 'package:lms/features/attendance/shared/data/models/mobile_config_model.dart';
 import 'package:lms/features/attendance/view_attendance/data/models/attendance_summary_model.dart';
 
 class AttendanceRepository {
@@ -11,7 +12,18 @@ class AttendanceRepository {
 
   AttendanceRepository(this.api);
 
+  // ─────────────────────────────────────────────
+  // MOBILE CONFIG (NEW)
+  // ─────────────────────────────────────────────
+
+  Future<MobileConfig> fetchMobileConfig() async {
+    final res = await api.fetchMobileConfig();
+    return MobileConfig.fromJson(res);
+  }
+
+  // ─────────────────────────────────────────────
   // FETCH ATTENDANCE
+  // ─────────────────────────────────────────────
 
   Future<AttendanceResponse> fetchAttendance({
     required int month,
@@ -41,29 +53,39 @@ class AttendanceRepository {
         .toList();
   }
 
-  // NORMAL CHECK-IN
+  // ─────────────────────────────────────────────
+  // CHECK-IN (JSON fallback)
+  // ─────────────────────────────────────────────
 
   Future<void> punchIn(Map<String, dynamic> body) => api.punchIn(body);
 
-  // ✅ MULTIPART CHECK-IN
+  // ─────────────────────────────────────────────
+  // MULTIPART CHECK-IN (UPDATED: file nullable)
+  // ─────────────────────────────────────────────
 
   Future<void> punchInMultipart({
-    required File file,
+    File? file,
     required Map<String, dynamic> body,
   }) => api.punchInMultipart(file: file, body: body);
 
-  // ✅ MULTIPART CHECK-OUT
+  // ─────────────────────────────────────────────
+  // MULTIPART CHECK-OUT (UPDATED: file nullable)
+  // ─────────────────────────────────────────────
 
   Future<void> punchOutMultipart({
-    required File file,
+    File? file,
     required Map<String, dynamic> body,
   }) => api.punchOutMultipart(file: file, body: body);
 
-  // CHECK OUT
+  // ─────────────────────────────────────────────
+  // CHECK OUT (JSON fallback)
+  // ─────────────────────────────────────────────
 
   Future<void> punchOut(Map<String, dynamic> body) => api.punchOut(body);
 
+  // ─────────────────────────────────────────────
   // CORRECTIONS
+  // ─────────────────────────────────────────────
 
   Future<void> requestCorrection(Map<String, dynamic> body) =>
       api.requestCorrection(body);

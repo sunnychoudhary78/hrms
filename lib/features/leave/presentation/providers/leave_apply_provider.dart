@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/network_providers.dart';
 import '../../data/leave_apply_api_service.dart';
@@ -22,15 +23,28 @@ class LeaveApplyNotifier extends AsyncNotifier<void> {
   }) async {
     final api = ref.read(leaveApplyApiProvider);
 
+    debugPrint("🚀 LeaveApplyNotifier.submitLeave called");
+    debugPrint("📦 Data: $data");
+    debugPrint("📄 Document: ${document?.path}");
+
     state = const AsyncLoading();
 
     try {
-      await api.sendLeaveRequestWithDocument(data: data, document: document);
+      final response = await api.sendLeaveRequestWithDocument(
+        data: data,
+        document: document,
+      );
+
+      debugPrint("✅ Leave apply success");
+      debugPrint("📦 Response: $response");
 
       state = const AsyncData(null);
     } catch (e, st) {
+      debugPrint("❌ LeaveApplyNotifier error: $e");
+
       state = AsyncError(e, st);
-      rethrow;
+
+      throw Exception(e.toString().replaceAll("Exception: ", ""));
     }
   }
 }

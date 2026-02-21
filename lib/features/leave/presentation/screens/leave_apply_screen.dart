@@ -36,6 +36,25 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
   String reason = '';
   File? document;
 
+  /// ✅ CRITICAL FIX: correct backend date format
+  String _formatDate(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
+  }
+
+  double _calculateLeaveDays() {
+    if (fromDate == null || toDate == null) return 0;
+
+    if (dayType == DayType.half) {
+      return 0.5;
+    }
+
+    final diff = toDate!.difference(fromDate!).inDays + 1;
+
+    return diff.toDouble();
+  }
+
   bool get isDocumentRequired {
     if (selectedLeave == null) return false;
     final name = selectedLeave!.name.toLowerCase();
@@ -61,23 +80,67 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
       return;
     }
 
-    await ref
-        .read(leaveApplyProvider.notifier)
-        .submitLeave(
-          data: {
-            "leaveTypeId": selectedLeave!.leaveTypeId,
-            "startDate": fromDate!.toIso8601String(),
-            "endDate": toDate!.toIso8601String(),
-            "reason": reason,
-            "isHalfDay": dayType == DayType.half,
-            "halfDayPart": dayType == DayType.half
-                ? halfDayPart!.name.toUpperCase()
-                : null,
-          },
-          document: document,
-        );
+    /// ✅ NEW: LEAVE BALANCE VALIDATION
+    final requestedDays = _calculateLeaveDays();
+    final availableDays = selectedLeave!.available;
 
-    if (mounted) Navigator.pop(context);
+    debugPrint("Requested days: $requestedDays");
+    debugPrint("Available days: $availableDays");
+
+    /// Fix floating precision issues
+    if (requestedDays > availableDays + 0.001) {
+      final formattedAvailable = availableDays % 1 == 0
+          ? availableDays.toInt().toString()
+          : availableDays.toString();
+
+      _showError(
+        "You only have $formattedAvailable ${selectedLeave!.name} remaining",
+      );
+
+      return;
+    }
+
+    final requestData = <String, dynamic>{
+      "leaveTypeId": selectedLeave!.leaveTypeId,
+      "startDate": _formatDate(fromDate!),
+      "endDate": _formatDate(toDate!),
+      "reason": reason,
+      "isHalfDay": dayType == DayType.half,
+    };
+
+    if (dayType == DayType.half) {
+      requestData["halfDayPart"] = halfDayPart!.name.toUpperCase();
+    }
+
+    debugPrint("========== LEAVE APPLY DEBUG ==========");
+    debugPrint("leaveTypeId: ${selectedLeave!.leaveTypeId}");
+    debugPrint("fromDate RAW: $fromDate");
+    debugPrint("toDate RAW: $toDate");
+    debugPrint("startDate SENT: ${requestData["startDate"]}");
+    debugPrint("endDate SENT: ${requestData["endDate"]}");
+    debugPrint("isHalfDay SENT: ${requestData["isHalfDay"]}");
+    debugPrint("halfDayPart SENT: ${requestData["halfDayPart"]}");
+    debugPrint("reason SENT: $reason");
+    debugPrint("document PATH: ${document?.path}");
+    debugPrint("======================================");
+
+    try {
+      await ref
+          .read(leaveApplyProvider.notifier)
+          .submitLeave(data: requestData, document: document);
+      if (mounted) {
+        Navigator.pop(context);
+
+        Future.delayed(const Duration(milliseconds: 300), () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Leave applied successfully")),
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint("LEAVE APPLY ERROR: $e");
+      _showError(e.toString().replaceAll("Exception: ", ""));
+    }
   }
 
   void _showError(String msg) {
@@ -94,17 +157,13 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,
       appBar: const AppAppBar(title: "Apply Leave", showBack: false),
-      drawer: AppDrawer(),
-
+      drawer: const AppDrawer(),
       body: balanceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-
         error: (e, _) => Center(child: Text(e.toString())),
-
         data: (leaves) => ListView(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
           children: [
-            /// SINGLE MAIN CARD
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(
@@ -115,8 +174,7 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// LEAVE TYPE
-                    _SectionTitle("Leave Type"),
+                    const _SectionTitle("Leave Type"),
 
                     LeaveTypeDropdown(
                       leaves: leaves,
@@ -127,8 +185,7 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
 
                     const SizedBox(height: 24),
 
-                    /// DURATION
-                    _SectionTitle("Duration"),
+                    const _SectionTitle("Duration"),
 
                     const SizedBox(height: 8),
 
@@ -148,7 +205,6 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
 
                     if (dayType == DayType.half) ...[
                       const SizedBox(height: 12),
-
                       _HalfDaySelector(
                         value: halfDayPart,
                         onChanged: (v) => setState(() => halfDayPart = v),
@@ -160,9 +216,12 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                     DateRangePicker(
                       from: fromDate,
                       to: toDate,
+                      maxLeaveDays: selectedLeave?.available ?? 0,
+                      isHalfDay: dayType == DayType.half,
                       onFromPick: (d) {
                         setState(() {
                           fromDate = d;
+
                           if (dayType == DayType.half) {
                             toDate = d;
                           }
@@ -182,16 +241,13 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
 
                     const SizedBox(height: 24),
 
-                    /// REASON
-                    _SectionTitle("Reason"),
+                    const _SectionTitle("Reason"),
 
                     ReasonInput(onChanged: (v) => reason = v),
 
                     if (isDocumentRequired) ...[
                       const SizedBox(height: 24),
-
-                      _SectionTitle("Supporting Document"),
-
+                      const _SectionTitle("Supporting Document"),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.attach_file),
                         label: Text(
@@ -199,13 +255,14 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
                               ? "Attach Document"
                               : "Document Selected",
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          /// implement file picker if needed
+                        },
                       ),
                     ],
 
                     const SizedBox(height: 28),
 
-                    /// SUBMIT BUTTON INSIDE CARD
                     SubmitButton(
                       isLoading: applyState.isLoading,
                       onPressed: _submit,
@@ -221,7 +278,6 @@ class _LeaveApplyScreenState extends ConsumerState<LeaveApplyScreen> {
   }
 }
 
-/// CLEAN SECTION TITLE
 class _SectionTitle extends StatelessWidget {
   final String text;
 
@@ -280,7 +336,6 @@ class _HalfDaySelector extends StatelessWidget {
           selected: value == HalfDayPart.am,
           onSelected: (_) => onChanged(HalfDayPart.am),
         ),
-
         ChoiceChip(
           label: const Text("PM"),
           selected: value == HalfDayPart.pm,
